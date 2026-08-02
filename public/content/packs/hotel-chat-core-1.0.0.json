@@ -1,0 +1,2564 @@
+{
+  "id": "hotel-chat-core",
+  "version": "1.0.0",
+  "minAppVersion": "1.0.0",
+  "releasedAt": "2026-08-02T00:00:00.000Z",
+  "scenarios": [
+    {
+      "id": "hotel-chat-01",
+      "version": "1.0.0",
+      "titleZh": "找不到订单",
+      "titleEn": "Unable to Locate a Booking",
+      "category": "hotel",
+      "channel": "chat",
+      "difficulty": "beginner",
+      "duration": 5,
+      "context": "你是中文运营人员，需与海外酒店核实「找不到订单」，避免作出未经确认的承诺。",
+      "userRole": "Operations coordinator",
+      "partnerRole": "hotel reservations team",
+      "partnerMessage": "Hello, we need more details before we can assist with unable to locate a booking.",
+      "translation": "您好，我们需要更多信息才能协助处理找不到订单。",
+      "requiredObjectives": [
+        {
+          "id": "request",
+          "label": "礼貌说明请求",
+          "keywords": [
+            "could you",
+            "please",
+            "would you"
+          ],
+          "required": true
+        },
+        {
+          "id": "identify",
+          "label": "提供订单识别信息",
+          "keywords": [
+            "booking",
+            "reference",
+            "[booking_id]",
+            "[hotel_confirmation]"
+          ],
+          "required": true
+        },
+        {
+          "id": "confirm",
+          "label": "请求书面确认或状态",
+          "keywords": [
+            "confirm",
+            "status",
+            "let us know"
+          ],
+          "required": true
+        }
+      ],
+      "optionalObjectives": [
+        {
+          "id": "thanks",
+          "label": "表达感谢",
+          "keywords": [
+            "thank",
+            "appreciate"
+          ],
+          "required": false
+        }
+      ],
+      "requiredEntities": [
+        "bookingId"
+      ],
+      "keywords": {
+        "confirm": [
+          "confirm",
+          "verify",
+          "check"
+        ],
+        "request": [
+          "could you",
+          "would you",
+          "please"
+        ],
+        "urgent": [
+          "urgent",
+          "as soon as possible"
+        ]
+      },
+      "nodes": [
+        {
+          "id": "n1",
+          "speaker": "partner",
+          "text": "Please share the booking reference for unable to locate a booking.",
+          "next": [
+            "n2",
+            "n3"
+          ]
+        },
+        {
+          "id": "n2",
+          "speaker": "user",
+          "text": "Could you please check the reservation and confirm the current status for [BOOKING_ID]?",
+          "expectedIntent": "request confirmation",
+          "next": [
+            "n4"
+          ]
+        },
+        {
+          "id": "n3",
+          "speaker": "user",
+          "text": "Could you clarify which reference you require?",
+          "expectedIntent": "request clarification",
+          "next": [
+            "n4"
+          ]
+        },
+        {
+          "id": "n4",
+          "speaker": "partner",
+          "text": "We are checking the record now. Is there anything else to confirm?",
+          "next": [
+            "n5",
+            "n6"
+          ]
+        },
+        {
+          "id": "n5",
+          "speaker": "user",
+          "text": "Please also confirm [HOTEL_CONFIRMATION] in writing.",
+          "expectedIntent": "request written confirmation",
+          "next": [
+            "n7"
+          ]
+        },
+        {
+          "id": "n6",
+          "speaker": "user",
+          "text": "Thank you. Please let us know once it is confirmed.",
+          "expectedIntent": "request confirmation",
+          "next": [
+            "n7"
+          ]
+        },
+        {
+          "id": "n7",
+          "speaker": "partner",
+          "text": "The request is recorded; we will update you shortly.",
+          "next": [
+            "n8"
+          ]
+        },
+        {
+          "id": "n8",
+          "speaker": "user",
+          "text": "Thank you for your assistance.",
+          "expectedIntent": "thanks",
+          "next": []
+        }
+      ],
+      "hints": [
+        "先礼貌说明要处理的事项。",
+        "用 [BOOKING_ID] 或订单号让对方可以定位记录。",
+        "明确要求确认状态或后续步骤。"
+      ],
+      "vocabulary": [
+        {
+          "term": "reservation",
+          "meaning": "预订（酒店）"
+        },
+        {
+          "term": "itinerary",
+          "meaning": "行程（航班）"
+        },
+        {
+          "term": "confirm",
+          "meaning": "确认"
+        }
+      ],
+      "phrases": [
+        {
+          "text": "Could you please check the reservation and confirm the current status for [BOOKING_ID]?",
+          "meaning": "请协助核实该订单。"
+        },
+        {
+          "text": "Please let us know if any action is required.",
+          "meaning": "如需我们采取任何操作，请告知。"
+        }
+      ],
+      "commonErrors": [
+        "避免使用 reply me，应使用 reply to us 或 let us know。",
+        "不要承诺退款或补偿一定会成功。"
+      ],
+      "reference": {
+        "body": "Could you please check the reservation and confirm the current status for [BOOKING_ID]?",
+        "dialogue": [
+          {
+            "role": "partner",
+            "text": "Please share the booking reference for unable to locate a booking."
+          },
+          {
+            "role": "user",
+            "text": "Could you please check the reservation and confirm the current status for [BOOKING_ID]? The reference is [BOOKING_ID]."
+          },
+          {
+            "role": "partner",
+            "text": "We are checking it now."
+          },
+          {
+            "role": "user",
+            "text": "Thank you. Please send written confirmation when available."
+          }
+        ]
+      },
+      "scoring": {
+        "politenessTerms": [
+          "please",
+          "could you",
+          "would you",
+          "thank you"
+        ],
+        "minWords": 8,
+        "maxChatWords": 80
+      }
+    },
+    {
+      "id": "hotel-chat-02",
+      "version": "1.0.0",
+      "titleZh": "索要酒店确认号",
+      "titleEn": "Requesting Hotel Confirmation Number",
+      "category": "hotel",
+      "channel": "chat",
+      "difficulty": "beginner",
+      "duration": 5,
+      "context": "你是中文运营人员，需与海外酒店核实「索要酒店确认号」，避免作出未经确认的承诺。",
+      "userRole": "Operations coordinator",
+      "partnerRole": "hotel reservations team",
+      "partnerMessage": "Hello, we need more details before we can assist with requesting hotel confirmation number.",
+      "translation": "您好，我们需要更多信息才能协助处理索要酒店确认号。",
+      "requiredObjectives": [
+        {
+          "id": "request",
+          "label": "礼貌说明请求",
+          "keywords": [
+            "could you",
+            "please",
+            "would you"
+          ],
+          "required": true
+        },
+        {
+          "id": "identify",
+          "label": "提供订单识别信息",
+          "keywords": [
+            "booking",
+            "reference",
+            "[booking_id]",
+            "[hotel_confirmation]"
+          ],
+          "required": true
+        },
+        {
+          "id": "confirm",
+          "label": "请求书面确认或状态",
+          "keywords": [
+            "confirm",
+            "status",
+            "let us know"
+          ],
+          "required": true
+        }
+      ],
+      "optionalObjectives": [
+        {
+          "id": "thanks",
+          "label": "表达感谢",
+          "keywords": [
+            "thank",
+            "appreciate"
+          ],
+          "required": false
+        }
+      ],
+      "requiredEntities": [
+        "bookingId"
+      ],
+      "keywords": {
+        "confirm": [
+          "confirm",
+          "verify",
+          "check"
+        ],
+        "request": [
+          "could you",
+          "would you",
+          "please"
+        ],
+        "urgent": [
+          "urgent",
+          "as soon as possible"
+        ]
+      },
+      "nodes": [
+        {
+          "id": "n1",
+          "speaker": "partner",
+          "text": "Please share the booking reference for requesting hotel confirmation number.",
+          "next": [
+            "n2",
+            "n3"
+          ]
+        },
+        {
+          "id": "n2",
+          "speaker": "user",
+          "text": "Could you please check the reservation and confirm the current status for [BOOKING_ID]?",
+          "expectedIntent": "request confirmation",
+          "next": [
+            "n4"
+          ]
+        },
+        {
+          "id": "n3",
+          "speaker": "user",
+          "text": "Could you clarify which reference you require?",
+          "expectedIntent": "request clarification",
+          "next": [
+            "n4"
+          ]
+        },
+        {
+          "id": "n4",
+          "speaker": "partner",
+          "text": "We are checking the record now. Is there anything else to confirm?",
+          "next": [
+            "n5",
+            "n6"
+          ]
+        },
+        {
+          "id": "n5",
+          "speaker": "user",
+          "text": "Please also confirm [HOTEL_CONFIRMATION] in writing.",
+          "expectedIntent": "request written confirmation",
+          "next": [
+            "n7"
+          ]
+        },
+        {
+          "id": "n6",
+          "speaker": "user",
+          "text": "Thank you. Please let us know once it is confirmed.",
+          "expectedIntent": "request confirmation",
+          "next": [
+            "n7"
+          ]
+        },
+        {
+          "id": "n7",
+          "speaker": "partner",
+          "text": "The request is recorded; we will update you shortly.",
+          "next": [
+            "n8"
+          ]
+        },
+        {
+          "id": "n8",
+          "speaker": "user",
+          "text": "Thank you for your assistance.",
+          "expectedIntent": "thanks",
+          "next": []
+        }
+      ],
+      "hints": [
+        "先礼貌说明要处理的事项。",
+        "用 [BOOKING_ID] 或订单号让对方可以定位记录。",
+        "明确要求确认状态或后续步骤。"
+      ],
+      "vocabulary": [
+        {
+          "term": "reservation",
+          "meaning": "预订（酒店）"
+        },
+        {
+          "term": "itinerary",
+          "meaning": "行程（航班）"
+        },
+        {
+          "term": "confirm",
+          "meaning": "确认"
+        }
+      ],
+      "phrases": [
+        {
+          "text": "Could you please check the reservation and confirm the current status for [BOOKING_ID]?",
+          "meaning": "请协助核实该订单。"
+        },
+        {
+          "text": "Please let us know if any action is required.",
+          "meaning": "如需我们采取任何操作，请告知。"
+        }
+      ],
+      "commonErrors": [
+        "避免使用 reply me，应使用 reply to us 或 let us know。",
+        "不要承诺退款或补偿一定会成功。"
+      ],
+      "reference": {
+        "body": "Could you please check the reservation and confirm the current status for [BOOKING_ID]?",
+        "dialogue": [
+          {
+            "role": "partner",
+            "text": "Please share the booking reference for requesting hotel confirmation number."
+          },
+          {
+            "role": "user",
+            "text": "Could you please check the reservation and confirm the current status for [BOOKING_ID]? The reference is [BOOKING_ID]."
+          },
+          {
+            "role": "partner",
+            "text": "We are checking it now."
+          },
+          {
+            "role": "user",
+            "text": "Thank you. Please send written confirmation when available."
+          }
+        ]
+      },
+      "scoring": {
+        "politenessTerms": [
+          "please",
+          "could you",
+          "would you",
+          "thank you"
+        ],
+        "minWords": 8,
+        "maxChatWords": 80
+      }
+    },
+    {
+      "id": "hotel-chat-03",
+      "version": "1.0.0",
+      "titleZh": "深夜抵达避免 no-show",
+      "titleEn": "Late Arrival and No-show Prevention",
+      "category": "hotel",
+      "channel": "chat",
+      "difficulty": "beginner",
+      "duration": 5,
+      "context": "你是中文运营人员，需与海外酒店核实「深夜抵达避免 no-show」，避免作出未经确认的承诺。",
+      "userRole": "Operations coordinator",
+      "partnerRole": "hotel reservations team",
+      "partnerMessage": "Hello, we need more details before we can assist with late arrival and no-show prevention.",
+      "translation": "您好，我们需要更多信息才能协助处理深夜抵达避免 no-show。",
+      "requiredObjectives": [
+        {
+          "id": "request",
+          "label": "礼貌说明请求",
+          "keywords": [
+            "could you",
+            "please",
+            "would you"
+          ],
+          "required": true
+        },
+        {
+          "id": "identify",
+          "label": "提供订单识别信息",
+          "keywords": [
+            "booking",
+            "reference",
+            "[booking_id]",
+            "[hotel_confirmation]"
+          ],
+          "required": true
+        },
+        {
+          "id": "confirm",
+          "label": "请求书面确认或状态",
+          "keywords": [
+            "confirm",
+            "status",
+            "let us know"
+          ],
+          "required": true
+        }
+      ],
+      "optionalObjectives": [
+        {
+          "id": "thanks",
+          "label": "表达感谢",
+          "keywords": [
+            "thank",
+            "appreciate"
+          ],
+          "required": false
+        }
+      ],
+      "requiredEntities": [
+        "bookingId"
+      ],
+      "keywords": {
+        "confirm": [
+          "confirm",
+          "verify",
+          "check"
+        ],
+        "request": [
+          "could you",
+          "would you",
+          "please"
+        ],
+        "urgent": [
+          "urgent",
+          "as soon as possible"
+        ]
+      },
+      "nodes": [
+        {
+          "id": "n1",
+          "speaker": "partner",
+          "text": "Please share the booking reference for late arrival and no-show prevention.",
+          "next": [
+            "n2",
+            "n3"
+          ]
+        },
+        {
+          "id": "n2",
+          "speaker": "user",
+          "text": "Could you please check the reservation and confirm the current status for [BOOKING_ID]?",
+          "expectedIntent": "request confirmation",
+          "next": [
+            "n4"
+          ]
+        },
+        {
+          "id": "n3",
+          "speaker": "user",
+          "text": "Could you clarify which reference you require?",
+          "expectedIntent": "request clarification",
+          "next": [
+            "n4"
+          ]
+        },
+        {
+          "id": "n4",
+          "speaker": "partner",
+          "text": "We are checking the record now. Is there anything else to confirm?",
+          "next": [
+            "n5",
+            "n6"
+          ]
+        },
+        {
+          "id": "n5",
+          "speaker": "user",
+          "text": "Please also confirm [HOTEL_CONFIRMATION] in writing.",
+          "expectedIntent": "request written confirmation",
+          "next": [
+            "n7"
+          ]
+        },
+        {
+          "id": "n6",
+          "speaker": "user",
+          "text": "Thank you. Please let us know once it is confirmed.",
+          "expectedIntent": "request confirmation",
+          "next": [
+            "n7"
+          ]
+        },
+        {
+          "id": "n7",
+          "speaker": "partner",
+          "text": "The request is recorded; we will update you shortly.",
+          "next": [
+            "n8"
+          ]
+        },
+        {
+          "id": "n8",
+          "speaker": "user",
+          "text": "Thank you for your assistance.",
+          "expectedIntent": "thanks",
+          "next": []
+        }
+      ],
+      "hints": [
+        "先礼貌说明要处理的事项。",
+        "用 [BOOKING_ID] 或订单号让对方可以定位记录。",
+        "明确要求确认状态或后续步骤。"
+      ],
+      "vocabulary": [
+        {
+          "term": "reservation",
+          "meaning": "预订（酒店）"
+        },
+        {
+          "term": "itinerary",
+          "meaning": "行程（航班）"
+        },
+        {
+          "term": "confirm",
+          "meaning": "确认"
+        }
+      ],
+      "phrases": [
+        {
+          "text": "Could you please check the reservation and confirm the current status for [BOOKING_ID]?",
+          "meaning": "请协助核实该订单。"
+        },
+        {
+          "text": "Please let us know if any action is required.",
+          "meaning": "如需我们采取任何操作，请告知。"
+        }
+      ],
+      "commonErrors": [
+        "避免使用 reply me，应使用 reply to us 或 let us know。",
+        "不要承诺退款或补偿一定会成功。"
+      ],
+      "reference": {
+        "body": "Could you please check the reservation and confirm the current status for [BOOKING_ID]?",
+        "dialogue": [
+          {
+            "role": "partner",
+            "text": "Please share the booking reference for late arrival and no-show prevention."
+          },
+          {
+            "role": "user",
+            "text": "Could you please check the reservation and confirm the current status for [BOOKING_ID]? The reference is [BOOKING_ID]."
+          },
+          {
+            "role": "partner",
+            "text": "We are checking it now."
+          },
+          {
+            "role": "user",
+            "text": "Thank you. Please send written confirmation when available."
+          }
+        ]
+      },
+      "scoring": {
+        "politenessTerms": [
+          "please",
+          "could you",
+          "would you",
+          "thank you"
+        ],
+        "minWords": 8,
+        "maxChatWords": 80
+      }
+    },
+    {
+      "id": "hotel-chat-04",
+      "version": "1.0.0",
+      "titleZh": "修改入住人姓名",
+      "titleEn": "Changing Guest Name",
+      "category": "hotel",
+      "channel": "chat",
+      "difficulty": "beginner",
+      "duration": 5,
+      "context": "你是中文运营人员，需与海外酒店核实「修改入住人姓名」，避免作出未经确认的承诺。",
+      "userRole": "Operations coordinator",
+      "partnerRole": "hotel reservations team",
+      "partnerMessage": "Hello, we need more details before we can assist with changing guest name.",
+      "translation": "您好，我们需要更多信息才能协助处理修改入住人姓名。",
+      "requiredObjectives": [
+        {
+          "id": "request",
+          "label": "礼貌说明请求",
+          "keywords": [
+            "could you",
+            "please",
+            "would you"
+          ],
+          "required": true
+        },
+        {
+          "id": "identify",
+          "label": "提供订单识别信息",
+          "keywords": [
+            "booking",
+            "reference",
+            "[booking_id]",
+            "[hotel_confirmation]"
+          ],
+          "required": true
+        },
+        {
+          "id": "confirm",
+          "label": "请求书面确认或状态",
+          "keywords": [
+            "confirm",
+            "status",
+            "let us know"
+          ],
+          "required": true
+        }
+      ],
+      "optionalObjectives": [
+        {
+          "id": "thanks",
+          "label": "表达感谢",
+          "keywords": [
+            "thank",
+            "appreciate"
+          ],
+          "required": false
+        }
+      ],
+      "requiredEntities": [
+        "bookingId"
+      ],
+      "keywords": {
+        "confirm": [
+          "confirm",
+          "verify",
+          "check"
+        ],
+        "request": [
+          "could you",
+          "would you",
+          "please"
+        ],
+        "urgent": [
+          "urgent",
+          "as soon as possible"
+        ]
+      },
+      "nodes": [
+        {
+          "id": "n1",
+          "speaker": "partner",
+          "text": "Please share the booking reference for changing guest name.",
+          "next": [
+            "n2",
+            "n3"
+          ]
+        },
+        {
+          "id": "n2",
+          "speaker": "user",
+          "text": "Could you please check the reservation and confirm the current status for [BOOKING_ID]?",
+          "expectedIntent": "request confirmation",
+          "next": [
+            "n4"
+          ]
+        },
+        {
+          "id": "n3",
+          "speaker": "user",
+          "text": "Could you clarify which reference you require?",
+          "expectedIntent": "request clarification",
+          "next": [
+            "n4"
+          ]
+        },
+        {
+          "id": "n4",
+          "speaker": "partner",
+          "text": "We are checking the record now. Is there anything else to confirm?",
+          "next": [
+            "n5",
+            "n6"
+          ]
+        },
+        {
+          "id": "n5",
+          "speaker": "user",
+          "text": "Please also confirm [HOTEL_CONFIRMATION] in writing.",
+          "expectedIntent": "request written confirmation",
+          "next": [
+            "n7"
+          ]
+        },
+        {
+          "id": "n6",
+          "speaker": "user",
+          "text": "Thank you. Please let us know once it is confirmed.",
+          "expectedIntent": "request confirmation",
+          "next": [
+            "n7"
+          ]
+        },
+        {
+          "id": "n7",
+          "speaker": "partner",
+          "text": "The request is recorded; we will update you shortly.",
+          "next": [
+            "n8"
+          ]
+        },
+        {
+          "id": "n8",
+          "speaker": "user",
+          "text": "Thank you for your assistance.",
+          "expectedIntent": "thanks",
+          "next": []
+        }
+      ],
+      "hints": [
+        "先礼貌说明要处理的事项。",
+        "用 [BOOKING_ID] 或订单号让对方可以定位记录。",
+        "明确要求确认状态或后续步骤。"
+      ],
+      "vocabulary": [
+        {
+          "term": "reservation",
+          "meaning": "预订（酒店）"
+        },
+        {
+          "term": "itinerary",
+          "meaning": "行程（航班）"
+        },
+        {
+          "term": "confirm",
+          "meaning": "确认"
+        }
+      ],
+      "phrases": [
+        {
+          "text": "Could you please check the reservation and confirm the current status for [BOOKING_ID]?",
+          "meaning": "请协助核实该订单。"
+        },
+        {
+          "text": "Please let us know if any action is required.",
+          "meaning": "如需我们采取任何操作，请告知。"
+        }
+      ],
+      "commonErrors": [
+        "避免使用 reply me，应使用 reply to us 或 let us know。",
+        "不要承诺退款或补偿一定会成功。"
+      ],
+      "reference": {
+        "body": "Could you please check the reservation and confirm the current status for [BOOKING_ID]?",
+        "dialogue": [
+          {
+            "role": "partner",
+            "text": "Please share the booking reference for changing guest name."
+          },
+          {
+            "role": "user",
+            "text": "Could you please check the reservation and confirm the current status for [BOOKING_ID]? The reference is [BOOKING_ID]."
+          },
+          {
+            "role": "partner",
+            "text": "We are checking it now."
+          },
+          {
+            "role": "user",
+            "text": "Thank you. Please send written confirmation when available."
+          }
+        ]
+      },
+      "scoring": {
+        "politenessTerms": [
+          "please",
+          "could you",
+          "would you",
+          "thank you"
+        ],
+        "minWords": 8,
+        "maxChatWords": 80
+      }
+    },
+    {
+      "id": "hotel-chat-05",
+      "version": "1.0.0",
+      "titleZh": "修改入住日期",
+      "titleEn": "Changing Stay Dates",
+      "category": "hotel",
+      "channel": "chat",
+      "difficulty": "intermediate",
+      "duration": 5,
+      "context": "你是中文运营人员，需与海外酒店核实「修改入住日期」，避免作出未经确认的承诺。",
+      "userRole": "Operations coordinator",
+      "partnerRole": "hotel reservations team",
+      "partnerMessage": "Hello, we need more details before we can assist with changing stay dates.",
+      "translation": "您好，我们需要更多信息才能协助处理修改入住日期。",
+      "requiredObjectives": [
+        {
+          "id": "request",
+          "label": "礼貌说明请求",
+          "keywords": [
+            "could you",
+            "please",
+            "would you"
+          ],
+          "required": true
+        },
+        {
+          "id": "identify",
+          "label": "提供订单识别信息",
+          "keywords": [
+            "booking",
+            "reference",
+            "[booking_id]",
+            "[hotel_confirmation]"
+          ],
+          "required": true
+        },
+        {
+          "id": "confirm",
+          "label": "请求书面确认或状态",
+          "keywords": [
+            "confirm",
+            "status",
+            "let us know"
+          ],
+          "required": true
+        }
+      ],
+      "optionalObjectives": [
+        {
+          "id": "thanks",
+          "label": "表达感谢",
+          "keywords": [
+            "thank",
+            "appreciate"
+          ],
+          "required": false
+        }
+      ],
+      "requiredEntities": [
+        "bookingId"
+      ],
+      "keywords": {
+        "confirm": [
+          "confirm",
+          "verify",
+          "check"
+        ],
+        "request": [
+          "could you",
+          "would you",
+          "please"
+        ],
+        "urgent": [
+          "urgent",
+          "as soon as possible"
+        ]
+      },
+      "nodes": [
+        {
+          "id": "n1",
+          "speaker": "partner",
+          "text": "Please share the booking reference for changing stay dates.",
+          "next": [
+            "n2",
+            "n3"
+          ]
+        },
+        {
+          "id": "n2",
+          "speaker": "user",
+          "text": "Could you please check the reservation and confirm the current status for [BOOKING_ID]?",
+          "expectedIntent": "request confirmation",
+          "next": [
+            "n4"
+          ]
+        },
+        {
+          "id": "n3",
+          "speaker": "user",
+          "text": "Could you clarify which reference you require?",
+          "expectedIntent": "request clarification",
+          "next": [
+            "n4"
+          ]
+        },
+        {
+          "id": "n4",
+          "speaker": "partner",
+          "text": "We are checking the record now. Is there anything else to confirm?",
+          "next": [
+            "n5",
+            "n6"
+          ]
+        },
+        {
+          "id": "n5",
+          "speaker": "user",
+          "text": "Please also confirm [HOTEL_CONFIRMATION] in writing.",
+          "expectedIntent": "request written confirmation",
+          "next": [
+            "n7"
+          ]
+        },
+        {
+          "id": "n6",
+          "speaker": "user",
+          "text": "Thank you. Please let us know once it is confirmed.",
+          "expectedIntent": "request confirmation",
+          "next": [
+            "n7"
+          ]
+        },
+        {
+          "id": "n7",
+          "speaker": "partner",
+          "text": "The request is recorded; we will update you shortly.",
+          "next": [
+            "n8"
+          ]
+        },
+        {
+          "id": "n8",
+          "speaker": "user",
+          "text": "Thank you for your assistance.",
+          "expectedIntent": "thanks",
+          "next": []
+        }
+      ],
+      "hints": [
+        "先礼貌说明要处理的事项。",
+        "用 [BOOKING_ID] 或订单号让对方可以定位记录。",
+        "明确要求确认状态或后续步骤。"
+      ],
+      "vocabulary": [
+        {
+          "term": "reservation",
+          "meaning": "预订（酒店）"
+        },
+        {
+          "term": "itinerary",
+          "meaning": "行程（航班）"
+        },
+        {
+          "term": "confirm",
+          "meaning": "确认"
+        }
+      ],
+      "phrases": [
+        {
+          "text": "Could you please check the reservation and confirm the current status for [BOOKING_ID]?",
+          "meaning": "请协助核实该订单。"
+        },
+        {
+          "text": "Please let us know if any action is required.",
+          "meaning": "如需我们采取任何操作，请告知。"
+        }
+      ],
+      "commonErrors": [
+        "避免使用 reply me，应使用 reply to us 或 let us know。",
+        "不要承诺退款或补偿一定会成功。"
+      ],
+      "reference": {
+        "body": "Could you please check the reservation and confirm the current status for [BOOKING_ID]?",
+        "dialogue": [
+          {
+            "role": "partner",
+            "text": "Please share the booking reference for changing stay dates."
+          },
+          {
+            "role": "user",
+            "text": "Could you please check the reservation and confirm the current status for [BOOKING_ID]? The reference is [BOOKING_ID]."
+          },
+          {
+            "role": "partner",
+            "text": "We are checking it now."
+          },
+          {
+            "role": "user",
+            "text": "Thank you. Please send written confirmation when available."
+          }
+        ]
+      },
+      "scoring": {
+        "politenessTerms": [
+          "please",
+          "could you",
+          "would you",
+          "thank you"
+        ],
+        "minWords": 8,
+        "maxChatWords": 80
+      }
+    },
+    {
+      "id": "hotel-chat-06",
+      "version": "1.0.0",
+      "titleZh": "确认房型床型偏好",
+      "titleEn": "Confirming Room, Bed and Smoking Preference",
+      "category": "hotel",
+      "channel": "chat",
+      "difficulty": "intermediate",
+      "duration": 5,
+      "context": "你是中文运营人员，需与海外酒店核实「确认房型床型偏好」，避免作出未经确认的承诺。",
+      "userRole": "Operations coordinator",
+      "partnerRole": "hotel reservations team",
+      "partnerMessage": "Hello, we need more details before we can assist with confirming room, bed and smoking preference.",
+      "translation": "您好，我们需要更多信息才能协助处理确认房型床型偏好。",
+      "requiredObjectives": [
+        {
+          "id": "request",
+          "label": "礼貌说明请求",
+          "keywords": [
+            "could you",
+            "please",
+            "would you"
+          ],
+          "required": true
+        },
+        {
+          "id": "identify",
+          "label": "提供订单识别信息",
+          "keywords": [
+            "booking",
+            "reference",
+            "[booking_id]",
+            "[hotel_confirmation]"
+          ],
+          "required": true
+        },
+        {
+          "id": "confirm",
+          "label": "请求书面确认或状态",
+          "keywords": [
+            "confirm",
+            "status",
+            "let us know"
+          ],
+          "required": true
+        }
+      ],
+      "optionalObjectives": [
+        {
+          "id": "thanks",
+          "label": "表达感谢",
+          "keywords": [
+            "thank",
+            "appreciate"
+          ],
+          "required": false
+        }
+      ],
+      "requiredEntities": [
+        "bookingId"
+      ],
+      "keywords": {
+        "confirm": [
+          "confirm",
+          "verify",
+          "check"
+        ],
+        "request": [
+          "could you",
+          "would you",
+          "please"
+        ],
+        "urgent": [
+          "urgent",
+          "as soon as possible"
+        ]
+      },
+      "nodes": [
+        {
+          "id": "n1",
+          "speaker": "partner",
+          "text": "Please share the booking reference for confirming room, bed and smoking preference.",
+          "next": [
+            "n2",
+            "n3"
+          ]
+        },
+        {
+          "id": "n2",
+          "speaker": "user",
+          "text": "Could you please check the reservation and confirm the current status for [BOOKING_ID]?",
+          "expectedIntent": "request confirmation",
+          "next": [
+            "n4"
+          ]
+        },
+        {
+          "id": "n3",
+          "speaker": "user",
+          "text": "Could you clarify which reference you require?",
+          "expectedIntent": "request clarification",
+          "next": [
+            "n4"
+          ]
+        },
+        {
+          "id": "n4",
+          "speaker": "partner",
+          "text": "We are checking the record now. Is there anything else to confirm?",
+          "next": [
+            "n5",
+            "n6"
+          ]
+        },
+        {
+          "id": "n5",
+          "speaker": "user",
+          "text": "Please also confirm [HOTEL_CONFIRMATION] in writing.",
+          "expectedIntent": "request written confirmation",
+          "next": [
+            "n7"
+          ]
+        },
+        {
+          "id": "n6",
+          "speaker": "user",
+          "text": "Thank you. Please let us know once it is confirmed.",
+          "expectedIntent": "request confirmation",
+          "next": [
+            "n7"
+          ]
+        },
+        {
+          "id": "n7",
+          "speaker": "partner",
+          "text": "The request is recorded; we will update you shortly.",
+          "next": [
+            "n8"
+          ]
+        },
+        {
+          "id": "n8",
+          "speaker": "user",
+          "text": "Thank you for your assistance.",
+          "expectedIntent": "thanks",
+          "next": []
+        }
+      ],
+      "hints": [
+        "先礼貌说明要处理的事项。",
+        "用 [BOOKING_ID] 或订单号让对方可以定位记录。",
+        "明确要求确认状态或后续步骤。"
+      ],
+      "vocabulary": [
+        {
+          "term": "reservation",
+          "meaning": "预订（酒店）"
+        },
+        {
+          "term": "itinerary",
+          "meaning": "行程（航班）"
+        },
+        {
+          "term": "confirm",
+          "meaning": "确认"
+        }
+      ],
+      "phrases": [
+        {
+          "text": "Could you please check the reservation and confirm the current status for [BOOKING_ID]?",
+          "meaning": "请协助核实该订单。"
+        },
+        {
+          "text": "Please let us know if any action is required.",
+          "meaning": "如需我们采取任何操作，请告知。"
+        }
+      ],
+      "commonErrors": [
+        "避免使用 reply me，应使用 reply to us 或 let us know。",
+        "不要承诺退款或补偿一定会成功。"
+      ],
+      "reference": {
+        "body": "Could you please check the reservation and confirm the current status for [BOOKING_ID]?",
+        "dialogue": [
+          {
+            "role": "partner",
+            "text": "Please share the booking reference for confirming room, bed and smoking preference."
+          },
+          {
+            "role": "user",
+            "text": "Could you please check the reservation and confirm the current status for [BOOKING_ID]? The reference is [BOOKING_ID]."
+          },
+          {
+            "role": "partner",
+            "text": "We are checking it now."
+          },
+          {
+            "role": "user",
+            "text": "Thank you. Please send written confirmation when available."
+          }
+        ]
+      },
+      "scoring": {
+        "politenessTerms": [
+          "please",
+          "could you",
+          "would you",
+          "thank you"
+        ],
+        "minWords": 8,
+        "maxChatWords": 80
+      }
+    },
+    {
+      "id": "hotel-chat-07",
+      "version": "1.0.0",
+      "titleZh": "早餐税费和城市税",
+      "titleEn": "Breakfast, Taxes and City Tax",
+      "category": "hotel",
+      "channel": "chat",
+      "difficulty": "intermediate",
+      "duration": 5,
+      "context": "你是中文运营人员，需与海外酒店核实「早餐税费和城市税」，避免作出未经确认的承诺。",
+      "userRole": "Operations coordinator",
+      "partnerRole": "hotel reservations team",
+      "partnerMessage": "Hello, we need more details before we can assist with breakfast, taxes and city tax.",
+      "translation": "您好，我们需要更多信息才能协助处理早餐税费和城市税。",
+      "requiredObjectives": [
+        {
+          "id": "request",
+          "label": "礼貌说明请求",
+          "keywords": [
+            "could you",
+            "please",
+            "would you"
+          ],
+          "required": true
+        },
+        {
+          "id": "identify",
+          "label": "提供订单识别信息",
+          "keywords": [
+            "booking",
+            "reference",
+            "[booking_id]",
+            "[hotel_confirmation]"
+          ],
+          "required": true
+        },
+        {
+          "id": "confirm",
+          "label": "请求书面确认或状态",
+          "keywords": [
+            "confirm",
+            "status",
+            "let us know"
+          ],
+          "required": true
+        }
+      ],
+      "optionalObjectives": [
+        {
+          "id": "thanks",
+          "label": "表达感谢",
+          "keywords": [
+            "thank",
+            "appreciate"
+          ],
+          "required": false
+        }
+      ],
+      "requiredEntities": [
+        "bookingId"
+      ],
+      "keywords": {
+        "confirm": [
+          "confirm",
+          "verify",
+          "check"
+        ],
+        "request": [
+          "could you",
+          "would you",
+          "please"
+        ],
+        "urgent": [
+          "urgent",
+          "as soon as possible"
+        ]
+      },
+      "nodes": [
+        {
+          "id": "n1",
+          "speaker": "partner",
+          "text": "Please share the booking reference for breakfast, taxes and city tax.",
+          "next": [
+            "n2",
+            "n3"
+          ]
+        },
+        {
+          "id": "n2",
+          "speaker": "user",
+          "text": "Could you please check the reservation and confirm the current status for [BOOKING_ID]?",
+          "expectedIntent": "request confirmation",
+          "next": [
+            "n4"
+          ]
+        },
+        {
+          "id": "n3",
+          "speaker": "user",
+          "text": "Could you clarify which reference you require?",
+          "expectedIntent": "request clarification",
+          "next": [
+            "n4"
+          ]
+        },
+        {
+          "id": "n4",
+          "speaker": "partner",
+          "text": "We are checking the record now. Is there anything else to confirm?",
+          "next": [
+            "n5",
+            "n6"
+          ]
+        },
+        {
+          "id": "n5",
+          "speaker": "user",
+          "text": "Please also confirm [HOTEL_CONFIRMATION] in writing.",
+          "expectedIntent": "request written confirmation",
+          "next": [
+            "n7"
+          ]
+        },
+        {
+          "id": "n6",
+          "speaker": "user",
+          "text": "Thank you. Please let us know once it is confirmed.",
+          "expectedIntent": "request confirmation",
+          "next": [
+            "n7"
+          ]
+        },
+        {
+          "id": "n7",
+          "speaker": "partner",
+          "text": "The request is recorded; we will update you shortly.",
+          "next": [
+            "n8"
+          ]
+        },
+        {
+          "id": "n8",
+          "speaker": "user",
+          "text": "Thank you for your assistance.",
+          "expectedIntent": "thanks",
+          "next": []
+        }
+      ],
+      "hints": [
+        "先礼貌说明要处理的事项。",
+        "用 [BOOKING_ID] 或订单号让对方可以定位记录。",
+        "明确要求确认状态或后续步骤。"
+      ],
+      "vocabulary": [
+        {
+          "term": "reservation",
+          "meaning": "预订（酒店）"
+        },
+        {
+          "term": "itinerary",
+          "meaning": "行程（航班）"
+        },
+        {
+          "term": "confirm",
+          "meaning": "确认"
+        }
+      ],
+      "phrases": [
+        {
+          "text": "Could you please check the reservation and confirm the current status for [BOOKING_ID]?",
+          "meaning": "请协助核实该订单。"
+        },
+        {
+          "text": "Please let us know if any action is required.",
+          "meaning": "如需我们采取任何操作，请告知。"
+        }
+      ],
+      "commonErrors": [
+        "避免使用 reply me，应使用 reply to us 或 let us know。",
+        "不要承诺退款或补偿一定会成功。"
+      ],
+      "reference": {
+        "body": "Could you please check the reservation and confirm the current status for [BOOKING_ID]?",
+        "dialogue": [
+          {
+            "role": "partner",
+            "text": "Please share the booking reference for breakfast, taxes and city tax."
+          },
+          {
+            "role": "user",
+            "text": "Could you please check the reservation and confirm the current status for [BOOKING_ID]? The reference is [BOOKING_ID]."
+          },
+          {
+            "role": "partner",
+            "text": "We are checking it now."
+          },
+          {
+            "role": "user",
+            "text": "Thank you. Please send written confirmation when available."
+          }
+        ]
+      },
+      "scoring": {
+        "politenessTerms": [
+          "please",
+          "could you",
+          "would you",
+          "thank you"
+        ],
+        "minWords": 8,
+        "maxChatWords": 80
+      }
+    },
+    {
+      "id": "hotel-chat-08",
+      "version": "1.0.0",
+      "titleZh": "付款担保和预授权",
+      "titleEn": "Payment, Guarantee and Pre-authorisation",
+      "category": "hotel",
+      "channel": "chat",
+      "difficulty": "intermediate",
+      "duration": 5,
+      "context": "你是中文运营人员，需与海外酒店核实「付款担保和预授权」，避免作出未经确认的承诺。",
+      "userRole": "Operations coordinator",
+      "partnerRole": "hotel reservations team",
+      "partnerMessage": "Hello, we need more details before we can assist with payment, guarantee and pre-authorisation.",
+      "translation": "您好，我们需要更多信息才能协助处理付款担保和预授权。",
+      "requiredObjectives": [
+        {
+          "id": "request",
+          "label": "礼貌说明请求",
+          "keywords": [
+            "could you",
+            "please",
+            "would you"
+          ],
+          "required": true
+        },
+        {
+          "id": "identify",
+          "label": "提供订单识别信息",
+          "keywords": [
+            "booking",
+            "reference",
+            "[booking_id]",
+            "[hotel_confirmation]"
+          ],
+          "required": true
+        },
+        {
+          "id": "confirm",
+          "label": "请求书面确认或状态",
+          "keywords": [
+            "confirm",
+            "status",
+            "let us know"
+          ],
+          "required": true
+        }
+      ],
+      "optionalObjectives": [
+        {
+          "id": "thanks",
+          "label": "表达感谢",
+          "keywords": [
+            "thank",
+            "appreciate"
+          ],
+          "required": false
+        }
+      ],
+      "requiredEntities": [
+        "bookingId"
+      ],
+      "keywords": {
+        "confirm": [
+          "confirm",
+          "verify",
+          "check"
+        ],
+        "request": [
+          "could you",
+          "would you",
+          "please"
+        ],
+        "urgent": [
+          "urgent",
+          "as soon as possible"
+        ]
+      },
+      "nodes": [
+        {
+          "id": "n1",
+          "speaker": "partner",
+          "text": "Please share the booking reference for payment, guarantee and pre-authorisation.",
+          "next": [
+            "n2",
+            "n3"
+          ]
+        },
+        {
+          "id": "n2",
+          "speaker": "user",
+          "text": "Could you please check the reservation and confirm the current status for [BOOKING_ID]?",
+          "expectedIntent": "request confirmation",
+          "next": [
+            "n4"
+          ]
+        },
+        {
+          "id": "n3",
+          "speaker": "user",
+          "text": "Could you clarify which reference you require?",
+          "expectedIntent": "request clarification",
+          "next": [
+            "n4"
+          ]
+        },
+        {
+          "id": "n4",
+          "speaker": "partner",
+          "text": "We are checking the record now. Is there anything else to confirm?",
+          "next": [
+            "n5",
+            "n6"
+          ]
+        },
+        {
+          "id": "n5",
+          "speaker": "user",
+          "text": "Please also confirm [HOTEL_CONFIRMATION] in writing.",
+          "expectedIntent": "request written confirmation",
+          "next": [
+            "n7"
+          ]
+        },
+        {
+          "id": "n6",
+          "speaker": "user",
+          "text": "Thank you. Please let us know once it is confirmed.",
+          "expectedIntent": "request confirmation",
+          "next": [
+            "n7"
+          ]
+        },
+        {
+          "id": "n7",
+          "speaker": "partner",
+          "text": "The request is recorded; we will update you shortly.",
+          "next": [
+            "n8"
+          ]
+        },
+        {
+          "id": "n8",
+          "speaker": "user",
+          "text": "Thank you for your assistance.",
+          "expectedIntent": "thanks",
+          "next": []
+        }
+      ],
+      "hints": [
+        "先礼貌说明要处理的事项。",
+        "用 [BOOKING_ID] 或订单号让对方可以定位记录。",
+        "明确要求确认状态或后续步骤。"
+      ],
+      "vocabulary": [
+        {
+          "term": "reservation",
+          "meaning": "预订（酒店）"
+        },
+        {
+          "term": "itinerary",
+          "meaning": "行程（航班）"
+        },
+        {
+          "term": "confirm",
+          "meaning": "确认"
+        }
+      ],
+      "phrases": [
+        {
+          "text": "Could you please check the reservation and confirm the current status for [BOOKING_ID]?",
+          "meaning": "请协助核实该订单。"
+        },
+        {
+          "text": "Please let us know if any action is required.",
+          "meaning": "如需我们采取任何操作，请告知。"
+        }
+      ],
+      "commonErrors": [
+        "避免使用 reply me，应使用 reply to us 或 let us know。",
+        "不要承诺退款或补偿一定会成功。"
+      ],
+      "reference": {
+        "body": "Could you please check the reservation and confirm the current status for [BOOKING_ID]?",
+        "dialogue": [
+          {
+            "role": "partner",
+            "text": "Please share the booking reference for payment, guarantee and pre-authorisation."
+          },
+          {
+            "role": "user",
+            "text": "Could you please check the reservation and confirm the current status for [BOOKING_ID]? The reference is [BOOKING_ID]."
+          },
+          {
+            "role": "partner",
+            "text": "We are checking it now."
+          },
+          {
+            "role": "user",
+            "text": "Thank you. Please send written confirmation when available."
+          }
+        ]
+      },
+      "scoring": {
+        "politenessTerms": [
+          "please",
+          "could you",
+          "would you",
+          "thank you"
+        ],
+        "minWords": 8,
+        "maxChatWords": 80
+      }
+    },
+    {
+      "id": "hotel-chat-09",
+      "version": "1.0.0",
+      "titleZh": "超售和替代住宿",
+      "titleEn": "Overbooking and Alternative Accommodation",
+      "category": "hotel",
+      "channel": "chat",
+      "difficulty": "intermediate",
+      "duration": 5,
+      "context": "你是中文运营人员，需与海外酒店核实「超售和替代住宿」，避免作出未经确认的承诺。",
+      "userRole": "Operations coordinator",
+      "partnerRole": "hotel reservations team",
+      "partnerMessage": "Hello, we need more details before we can assist with overbooking and alternative accommodation.",
+      "translation": "您好，我们需要更多信息才能协助处理超售和替代住宿。",
+      "requiredObjectives": [
+        {
+          "id": "request",
+          "label": "礼貌说明请求",
+          "keywords": [
+            "could you",
+            "please",
+            "would you"
+          ],
+          "required": true
+        },
+        {
+          "id": "identify",
+          "label": "提供订单识别信息",
+          "keywords": [
+            "booking",
+            "reference",
+            "[booking_id]",
+            "[hotel_confirmation]"
+          ],
+          "required": true
+        },
+        {
+          "id": "confirm",
+          "label": "请求书面确认或状态",
+          "keywords": [
+            "confirm",
+            "status",
+            "let us know"
+          ],
+          "required": true
+        }
+      ],
+      "optionalObjectives": [
+        {
+          "id": "thanks",
+          "label": "表达感谢",
+          "keywords": [
+            "thank",
+            "appreciate"
+          ],
+          "required": false
+        }
+      ],
+      "requiredEntities": [
+        "bookingId"
+      ],
+      "keywords": {
+        "confirm": [
+          "confirm",
+          "verify",
+          "check"
+        ],
+        "request": [
+          "could you",
+          "would you",
+          "please"
+        ],
+        "urgent": [
+          "urgent",
+          "as soon as possible"
+        ]
+      },
+      "nodes": [
+        {
+          "id": "n1",
+          "speaker": "partner",
+          "text": "Please share the booking reference for overbooking and alternative accommodation.",
+          "next": [
+            "n2",
+            "n3"
+          ]
+        },
+        {
+          "id": "n2",
+          "speaker": "user",
+          "text": "Could you please check the reservation and confirm the current status for [BOOKING_ID]?",
+          "expectedIntent": "request confirmation",
+          "next": [
+            "n4"
+          ]
+        },
+        {
+          "id": "n3",
+          "speaker": "user",
+          "text": "Could you clarify which reference you require?",
+          "expectedIntent": "request clarification",
+          "next": [
+            "n4"
+          ]
+        },
+        {
+          "id": "n4",
+          "speaker": "partner",
+          "text": "We are checking the record now. Is there anything else to confirm?",
+          "next": [
+            "n5",
+            "n6"
+          ]
+        },
+        {
+          "id": "n5",
+          "speaker": "user",
+          "text": "Please also confirm [HOTEL_CONFIRMATION] in writing.",
+          "expectedIntent": "request written confirmation",
+          "next": [
+            "n7"
+          ]
+        },
+        {
+          "id": "n6",
+          "speaker": "user",
+          "text": "Thank you. Please let us know once it is confirmed.",
+          "expectedIntent": "request confirmation",
+          "next": [
+            "n7"
+          ]
+        },
+        {
+          "id": "n7",
+          "speaker": "partner",
+          "text": "The request is recorded; we will update you shortly.",
+          "next": [
+            "n8"
+          ]
+        },
+        {
+          "id": "n8",
+          "speaker": "user",
+          "text": "Thank you for your assistance.",
+          "expectedIntent": "thanks",
+          "next": []
+        }
+      ],
+      "hints": [
+        "先礼貌说明要处理的事项。",
+        "用 [BOOKING_ID] 或订单号让对方可以定位记录。",
+        "明确要求确认状态或后续步骤。"
+      ],
+      "vocabulary": [
+        {
+          "term": "reservation",
+          "meaning": "预订（酒店）"
+        },
+        {
+          "term": "itinerary",
+          "meaning": "行程（航班）"
+        },
+        {
+          "term": "confirm",
+          "meaning": "确认"
+        }
+      ],
+      "phrases": [
+        {
+          "text": "Could you please check the reservation and confirm the current status for [BOOKING_ID]?",
+          "meaning": "请协助核实该订单。"
+        },
+        {
+          "text": "Please let us know if any action is required.",
+          "meaning": "如需我们采取任何操作，请告知。"
+        }
+      ],
+      "commonErrors": [
+        "避免使用 reply me，应使用 reply to us 或 let us know。",
+        "不要承诺退款或补偿一定会成功。"
+      ],
+      "reference": {
+        "body": "Could you please check the reservation and confirm the current status for [BOOKING_ID]?",
+        "dialogue": [
+          {
+            "role": "partner",
+            "text": "Please share the booking reference for overbooking and alternative accommodation."
+          },
+          {
+            "role": "user",
+            "text": "Could you please check the reservation and confirm the current status for [BOOKING_ID]? The reference is [BOOKING_ID]."
+          },
+          {
+            "role": "partner",
+            "text": "We are checking it now."
+          },
+          {
+            "role": "user",
+            "text": "Thank you. Please send written confirmation when available."
+          }
+        ]
+      },
+      "scoring": {
+        "politenessTerms": [
+          "please",
+          "could you",
+          "would you",
+          "thank you"
+        ],
+        "minWords": 8,
+        "maxChatWords": 80
+      }
+    },
+    {
+      "id": "hotel-chat-10",
+      "version": "1.0.0",
+      "titleZh": "提前入住和延迟退房",
+      "titleEn": "Early Check-in and Late Check-out",
+      "category": "hotel",
+      "channel": "chat",
+      "difficulty": "advanced",
+      "duration": 5,
+      "context": "你是中文运营人员，需与海外酒店核实「提前入住和延迟退房」，避免作出未经确认的承诺。",
+      "userRole": "Operations coordinator",
+      "partnerRole": "hotel reservations team",
+      "partnerMessage": "Hello, we need more details before we can assist with early check-in and late check-out.",
+      "translation": "您好，我们需要更多信息才能协助处理提前入住和延迟退房。",
+      "requiredObjectives": [
+        {
+          "id": "request",
+          "label": "礼貌说明请求",
+          "keywords": [
+            "could you",
+            "please",
+            "would you"
+          ],
+          "required": true
+        },
+        {
+          "id": "identify",
+          "label": "提供订单识别信息",
+          "keywords": [
+            "booking",
+            "reference",
+            "[booking_id]",
+            "[hotel_confirmation]"
+          ],
+          "required": true
+        },
+        {
+          "id": "confirm",
+          "label": "请求书面确认或状态",
+          "keywords": [
+            "confirm",
+            "status",
+            "let us know"
+          ],
+          "required": true
+        }
+      ],
+      "optionalObjectives": [
+        {
+          "id": "thanks",
+          "label": "表达感谢",
+          "keywords": [
+            "thank",
+            "appreciate"
+          ],
+          "required": false
+        }
+      ],
+      "requiredEntities": [
+        "bookingId"
+      ],
+      "keywords": {
+        "confirm": [
+          "confirm",
+          "verify",
+          "check"
+        ],
+        "request": [
+          "could you",
+          "would you",
+          "please"
+        ],
+        "urgent": [
+          "urgent",
+          "as soon as possible"
+        ]
+      },
+      "nodes": [
+        {
+          "id": "n1",
+          "speaker": "partner",
+          "text": "Please share the booking reference for early check-in and late check-out.",
+          "next": [
+            "n2",
+            "n3"
+          ]
+        },
+        {
+          "id": "n2",
+          "speaker": "user",
+          "text": "Could you please check the reservation and confirm the current status for [BOOKING_ID]?",
+          "expectedIntent": "request confirmation",
+          "next": [
+            "n4"
+          ]
+        },
+        {
+          "id": "n3",
+          "speaker": "user",
+          "text": "Could you clarify which reference you require?",
+          "expectedIntent": "request clarification",
+          "next": [
+            "n4"
+          ]
+        },
+        {
+          "id": "n4",
+          "speaker": "partner",
+          "text": "We are checking the record now. Is there anything else to confirm?",
+          "next": [
+            "n5",
+            "n6"
+          ]
+        },
+        {
+          "id": "n5",
+          "speaker": "user",
+          "text": "Please also confirm [HOTEL_CONFIRMATION] in writing.",
+          "expectedIntent": "request written confirmation",
+          "next": [
+            "n7"
+          ]
+        },
+        {
+          "id": "n6",
+          "speaker": "user",
+          "text": "Thank you. Please let us know once it is confirmed.",
+          "expectedIntent": "request confirmation",
+          "next": [
+            "n7"
+          ]
+        },
+        {
+          "id": "n7",
+          "speaker": "partner",
+          "text": "The request is recorded; we will update you shortly.",
+          "next": [
+            "n8"
+          ]
+        },
+        {
+          "id": "n8",
+          "speaker": "user",
+          "text": "Thank you for your assistance.",
+          "expectedIntent": "thanks",
+          "next": []
+        }
+      ],
+      "hints": [
+        "先礼貌说明要处理的事项。",
+        "用 [BOOKING_ID] 或订单号让对方可以定位记录。",
+        "明确要求确认状态或后续步骤。"
+      ],
+      "vocabulary": [
+        {
+          "term": "reservation",
+          "meaning": "预订（酒店）"
+        },
+        {
+          "term": "itinerary",
+          "meaning": "行程（航班）"
+        },
+        {
+          "term": "confirm",
+          "meaning": "确认"
+        }
+      ],
+      "phrases": [
+        {
+          "text": "Could you please check the reservation and confirm the current status for [BOOKING_ID]?",
+          "meaning": "请协助核实该订单。"
+        },
+        {
+          "text": "Please let us know if any action is required.",
+          "meaning": "如需我们采取任何操作，请告知。"
+        }
+      ],
+      "commonErrors": [
+        "避免使用 reply me，应使用 reply to us 或 let us know。",
+        "不要承诺退款或补偿一定会成功。"
+      ],
+      "reference": {
+        "body": "Could you please check the reservation and confirm the current status for [BOOKING_ID]?",
+        "dialogue": [
+          {
+            "role": "partner",
+            "text": "Please share the booking reference for early check-in and late check-out."
+          },
+          {
+            "role": "user",
+            "text": "Could you please check the reservation and confirm the current status for [BOOKING_ID]? The reference is [BOOKING_ID]."
+          },
+          {
+            "role": "partner",
+            "text": "We are checking it now."
+          },
+          {
+            "role": "user",
+            "text": "Thank you. Please send written confirmation when available."
+          }
+        ]
+      },
+      "scoring": {
+        "politenessTerms": [
+          "please",
+          "could you",
+          "would you",
+          "thank you"
+        ],
+        "minWords": 8,
+        "maxChatWords": 80
+      }
+    },
+    {
+      "id": "hotel-chat-11",
+      "version": "1.0.0",
+      "titleZh": "取消和退款进度",
+      "titleEn": "Cancellation and Refund Status",
+      "category": "hotel",
+      "channel": "chat",
+      "difficulty": "advanced",
+      "duration": 5,
+      "context": "你是中文运营人员，需与海外酒店核实「取消和退款进度」，避免作出未经确认的承诺。",
+      "userRole": "Operations coordinator",
+      "partnerRole": "hotel reservations team",
+      "partnerMessage": "Hello, we need more details before we can assist with cancellation and refund status.",
+      "translation": "您好，我们需要更多信息才能协助处理取消和退款进度。",
+      "requiredObjectives": [
+        {
+          "id": "request",
+          "label": "礼貌说明请求",
+          "keywords": [
+            "could you",
+            "please",
+            "would you"
+          ],
+          "required": true
+        },
+        {
+          "id": "identify",
+          "label": "提供订单识别信息",
+          "keywords": [
+            "booking",
+            "reference",
+            "[booking_id]",
+            "[hotel_confirmation]"
+          ],
+          "required": true
+        },
+        {
+          "id": "confirm",
+          "label": "请求书面确认或状态",
+          "keywords": [
+            "confirm",
+            "status",
+            "let us know"
+          ],
+          "required": true
+        }
+      ],
+      "optionalObjectives": [
+        {
+          "id": "thanks",
+          "label": "表达感谢",
+          "keywords": [
+            "thank",
+            "appreciate"
+          ],
+          "required": false
+        }
+      ],
+      "requiredEntities": [
+        "bookingId"
+      ],
+      "keywords": {
+        "confirm": [
+          "confirm",
+          "verify",
+          "check"
+        ],
+        "request": [
+          "could you",
+          "would you",
+          "please"
+        ],
+        "urgent": [
+          "urgent",
+          "as soon as possible"
+        ]
+      },
+      "nodes": [
+        {
+          "id": "n1",
+          "speaker": "partner",
+          "text": "Please share the booking reference for cancellation and refund status.",
+          "next": [
+            "n2",
+            "n3"
+          ]
+        },
+        {
+          "id": "n2",
+          "speaker": "user",
+          "text": "Could you please check the reservation and confirm the current status for [BOOKING_ID]?",
+          "expectedIntent": "request confirmation",
+          "next": [
+            "n4"
+          ]
+        },
+        {
+          "id": "n3",
+          "speaker": "user",
+          "text": "Could you clarify which reference you require?",
+          "expectedIntent": "request clarification",
+          "next": [
+            "n4"
+          ]
+        },
+        {
+          "id": "n4",
+          "speaker": "partner",
+          "text": "We are checking the record now. Is there anything else to confirm?",
+          "next": [
+            "n5",
+            "n6"
+          ]
+        },
+        {
+          "id": "n5",
+          "speaker": "user",
+          "text": "Please also confirm [HOTEL_CONFIRMATION] in writing.",
+          "expectedIntent": "request written confirmation",
+          "next": [
+            "n7"
+          ]
+        },
+        {
+          "id": "n6",
+          "speaker": "user",
+          "text": "Thank you. Please let us know once it is confirmed.",
+          "expectedIntent": "request confirmation",
+          "next": [
+            "n7"
+          ]
+        },
+        {
+          "id": "n7",
+          "speaker": "partner",
+          "text": "The request is recorded; we will update you shortly.",
+          "next": [
+            "n8"
+          ]
+        },
+        {
+          "id": "n8",
+          "speaker": "user",
+          "text": "Thank you for your assistance.",
+          "expectedIntent": "thanks",
+          "next": []
+        }
+      ],
+      "hints": [
+        "先礼貌说明要处理的事项。",
+        "用 [BOOKING_ID] 或订单号让对方可以定位记录。",
+        "明确要求确认状态或后续步骤。"
+      ],
+      "vocabulary": [
+        {
+          "term": "reservation",
+          "meaning": "预订（酒店）"
+        },
+        {
+          "term": "itinerary",
+          "meaning": "行程（航班）"
+        },
+        {
+          "term": "confirm",
+          "meaning": "确认"
+        }
+      ],
+      "phrases": [
+        {
+          "text": "Could you please check the reservation and confirm the current status for [BOOKING_ID]?",
+          "meaning": "请协助核实该订单。"
+        },
+        {
+          "text": "Please let us know if any action is required.",
+          "meaning": "如需我们采取任何操作，请告知。"
+        }
+      ],
+      "commonErrors": [
+        "避免使用 reply me，应使用 reply to us 或 let us know。",
+        "不要承诺退款或补偿一定会成功。"
+      ],
+      "reference": {
+        "body": "Could you please check the reservation and confirm the current status for [BOOKING_ID]?",
+        "dialogue": [
+          {
+            "role": "partner",
+            "text": "Please share the booking reference for cancellation and refund status."
+          },
+          {
+            "role": "user",
+            "text": "Could you please check the reservation and confirm the current status for [BOOKING_ID]? The reference is [BOOKING_ID]."
+          },
+          {
+            "role": "partner",
+            "text": "We are checking it now."
+          },
+          {
+            "role": "user",
+            "text": "Thank you. Please send written confirmation when available."
+          }
+        ]
+      },
+      "scoring": {
+        "politenessTerms": [
+          "please",
+          "could you",
+          "would you",
+          "thank you"
+        ],
+        "minWords": 8,
+        "maxChatWords": 80
+      }
+    },
+    {
+      "id": "hotel-chat-12",
+      "version": "1.0.0",
+      "titleZh": "房间问题投诉升级",
+      "titleEn": "Room Issue, Complaint and Escalation",
+      "category": "hotel",
+      "channel": "chat",
+      "difficulty": "advanced",
+      "duration": 5,
+      "context": "你是中文运营人员，需与海外酒店核实「房间问题投诉升级」，避免作出未经确认的承诺。",
+      "userRole": "Operations coordinator",
+      "partnerRole": "hotel reservations team",
+      "partnerMessage": "Hello, we need more details before we can assist with room issue, complaint and escalation.",
+      "translation": "您好，我们需要更多信息才能协助处理房间问题投诉升级。",
+      "requiredObjectives": [
+        {
+          "id": "request",
+          "label": "礼貌说明请求",
+          "keywords": [
+            "could you",
+            "please",
+            "would you"
+          ],
+          "required": true
+        },
+        {
+          "id": "identify",
+          "label": "提供订单识别信息",
+          "keywords": [
+            "booking",
+            "reference",
+            "[booking_id]",
+            "[hotel_confirmation]"
+          ],
+          "required": true
+        },
+        {
+          "id": "confirm",
+          "label": "请求书面确认或状态",
+          "keywords": [
+            "confirm",
+            "status",
+            "let us know"
+          ],
+          "required": true
+        }
+      ],
+      "optionalObjectives": [
+        {
+          "id": "thanks",
+          "label": "表达感谢",
+          "keywords": [
+            "thank",
+            "appreciate"
+          ],
+          "required": false
+        }
+      ],
+      "requiredEntities": [
+        "bookingId"
+      ],
+      "keywords": {
+        "confirm": [
+          "confirm",
+          "verify",
+          "check"
+        ],
+        "request": [
+          "could you",
+          "would you",
+          "please"
+        ],
+        "urgent": [
+          "urgent",
+          "as soon as possible"
+        ]
+      },
+      "nodes": [
+        {
+          "id": "n1",
+          "speaker": "partner",
+          "text": "Please share the booking reference for room issue, complaint and escalation.",
+          "next": [
+            "n2",
+            "n3"
+          ]
+        },
+        {
+          "id": "n2",
+          "speaker": "user",
+          "text": "Could you please check the reservation and confirm the current status for [BOOKING_ID]?",
+          "expectedIntent": "request confirmation",
+          "next": [
+            "n4"
+          ]
+        },
+        {
+          "id": "n3",
+          "speaker": "user",
+          "text": "Could you clarify which reference you require?",
+          "expectedIntent": "request clarification",
+          "next": [
+            "n4"
+          ]
+        },
+        {
+          "id": "n4",
+          "speaker": "partner",
+          "text": "We are checking the record now. Is there anything else to confirm?",
+          "next": [
+            "n5",
+            "n6"
+          ]
+        },
+        {
+          "id": "n5",
+          "speaker": "user",
+          "text": "Please also confirm [HOTEL_CONFIRMATION] in writing.",
+          "expectedIntent": "request written confirmation",
+          "next": [
+            "n7"
+          ]
+        },
+        {
+          "id": "n6",
+          "speaker": "user",
+          "text": "Thank you. Please let us know once it is confirmed.",
+          "expectedIntent": "request confirmation",
+          "next": [
+            "n7"
+          ]
+        },
+        {
+          "id": "n7",
+          "speaker": "partner",
+          "text": "The request is recorded; we will update you shortly.",
+          "next": [
+            "n8"
+          ]
+        },
+        {
+          "id": "n8",
+          "speaker": "user",
+          "text": "Thank you for your assistance.",
+          "expectedIntent": "thanks",
+          "next": []
+        }
+      ],
+      "hints": [
+        "先礼貌说明要处理的事项。",
+        "用 [BOOKING_ID] 或订单号让对方可以定位记录。",
+        "明确要求确认状态或后续步骤。"
+      ],
+      "vocabulary": [
+        {
+          "term": "reservation",
+          "meaning": "预订（酒店）"
+        },
+        {
+          "term": "itinerary",
+          "meaning": "行程（航班）"
+        },
+        {
+          "term": "confirm",
+          "meaning": "确认"
+        }
+      ],
+      "phrases": [
+        {
+          "text": "Could you please check the reservation and confirm the current status for [BOOKING_ID]?",
+          "meaning": "请协助核实该订单。"
+        },
+        {
+          "text": "Please let us know if any action is required.",
+          "meaning": "如需我们采取任何操作，请告知。"
+        }
+      ],
+      "commonErrors": [
+        "避免使用 reply me，应使用 reply to us 或 let us know。",
+        "不要承诺退款或补偿一定会成功。"
+      ],
+      "reference": {
+        "body": "Could you please check the reservation and confirm the current status for [BOOKING_ID]?",
+        "dialogue": [
+          {
+            "role": "partner",
+            "text": "Please share the booking reference for room issue, complaint and escalation."
+          },
+          {
+            "role": "user",
+            "text": "Could you please check the reservation and confirm the current status for [BOOKING_ID]? The reference is [BOOKING_ID]."
+          },
+          {
+            "role": "partner",
+            "text": "We are checking it now."
+          },
+          {
+            "role": "user",
+            "text": "Thank you. Please send written confirmation when available."
+          }
+        ]
+      },
+      "scoring": {
+        "politenessTerms": [
+          "please",
+          "could you",
+          "would you",
+          "thank you"
+        ],
+        "minWords": 8,
+        "maxChatWords": 80
+      }
+    }
+  ]
+}

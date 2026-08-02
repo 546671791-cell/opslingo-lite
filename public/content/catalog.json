@@ -1,0 +1,54 @@
+{
+  "catalogVersion": 1,
+  "releasedAt": "2026-08-02T00:00:00.000Z",
+  "packs": [
+    {
+      "id": "hotel-email-core",
+      "version": "1.0.0",
+      "minAppVersion": "1.0.0",
+      "path": "./packs/hotel-email-core-1.0.0.json",
+      "sha256": "8d1916eb4385dba7dc42e89bf1a616a536f4c3de94ebfe2458a8bb8b8a07a476",
+      "scenarioCount": 12,
+      "releasedAt": "2026-08-02T00:00:00.000Z",
+      "changelog": [
+        "内置首批酒店邮件场景"
+      ]
+    },
+    {
+      "id": "hotel-chat-core",
+      "version": "1.0.0",
+      "minAppVersion": "1.0.0",
+      "path": "./packs/hotel-chat-core-1.0.0.json",
+      "sha256": "f88666b85783d013e9208dac606228f936dff029cbebc91191c61328e3b85022",
+      "scenarioCount": 12,
+      "releasedAt": "2026-08-02T00:00:00.000Z",
+      "changelog": [
+        "内置首批酒店聊天场景"
+      ]
+    },
+    {
+      "id": "flight-email-core",
+      "version": "1.0.0",
+      "minAppVersion": "1.0.0",
+      "path": "./packs/flight-email-core-1.0.0.json",
+      "sha256": "460fcefea9f3b3bb6077ce920da488050c1590616637204ee0ccb17e4a32cee1",
+      "scenarioCount": 12,
+      "releasedAt": "2026-08-02T00:00:00.000Z",
+      "changelog": [
+        "内置首批航班邮件场景"
+      ]
+    },
+    {
+      "id": "flight-chat-core",
+      "version": "1.0.0",
+      "minAppVersion": "1.0.0",
+      "path": "./packs/flight-chat-core-1.0.0.json",
+      "sha256": "6083f3c1cd7f870268b4f049601d974afca61e1ffd141c257e96c8dfec2702d9",
+      "scenarioCount": 12,
+      "releasedAt": "2026-08-02T00:00:00.000Z",
+      "changelog": [
+        "内置首批航班聊天场景"
+      ]
+    }
+  ]
+}

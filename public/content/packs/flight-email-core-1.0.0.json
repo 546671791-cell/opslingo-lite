@@ -1,0 +1,2360 @@
+{
+  "id": "flight-email-core",
+  "version": "1.0.0",
+  "minAppVersion": "1.0.0",
+  "releasedAt": "2026-08-02T00:00:00.000Z",
+  "scenarios": [
+    {
+      "id": "flight-email-01",
+      "version": "1.0.0",
+      "titleZh": "确认出票状态和票号",
+      "titleEn": "Ticketing Status and Ticket Number",
+      "category": "flight",
+      "channel": "email",
+      "difficulty": "beginner",
+      "duration": 8,
+      "context": "你是中文运营人员，需与航空公司核实「确认出票状态和票号」，避免作出未经确认的承诺。",
+      "userRole": "Operations coordinator",
+      "partnerRole": "airline support team",
+      "partnerMessage": "Hello, we need more details before we can assist with ticketing status and ticket number.",
+      "translation": "您好，我们需要更多信息才能协助处理确认出票状态和票号。",
+      "requiredObjectives": [
+        {
+          "id": "request",
+          "label": "礼貌说明请求",
+          "keywords": [
+            "could you",
+            "please",
+            "would you"
+          ],
+          "required": true
+        },
+        {
+          "id": "identify",
+          "label": "提供订单识别信息",
+          "keywords": [
+            "booking",
+            "reference",
+            "[booking_id]",
+            "[ticket_number]"
+          ],
+          "required": true
+        },
+        {
+          "id": "confirm",
+          "label": "请求书面确认或状态",
+          "keywords": [
+            "confirm",
+            "status",
+            "let us know"
+          ],
+          "required": true
+        }
+      ],
+      "optionalObjectives": [
+        {
+          "id": "thanks",
+          "label": "表达感谢",
+          "keywords": [
+            "thank",
+            "appreciate"
+          ],
+          "required": false
+        }
+      ],
+      "requiredEntities": [
+        "bookingId"
+      ],
+      "keywords": {
+        "confirm": [
+          "confirm",
+          "verify",
+          "check"
+        ],
+        "request": [
+          "could you",
+          "would you",
+          "please"
+        ],
+        "urgent": [
+          "urgent",
+          "as soon as possible"
+        ]
+      },
+      "nodes": [
+        {
+          "id": "n1",
+          "speaker": "partner",
+          "text": "Please share the booking reference for ticketing status and ticket number.",
+          "next": [
+            "n2",
+            "n3"
+          ]
+        },
+        {
+          "id": "n2",
+          "speaker": "user",
+          "text": "Could you please check the booking and provide the current itinerary for [BOOKING_ID]?",
+          "expectedIntent": "request confirmation",
+          "next": [
+            "n4"
+          ]
+        },
+        {
+          "id": "n3",
+          "speaker": "user",
+          "text": "Could you clarify which reference you require?",
+          "expectedIntent": "request clarification",
+          "next": [
+            "n4"
+          ]
+        },
+        {
+          "id": "n4",
+          "speaker": "partner",
+          "text": "We are checking the record now. Is there anything else to confirm?",
+          "next": [
+            "n5",
+            "n6"
+          ]
+        },
+        {
+          "id": "n5",
+          "speaker": "user",
+          "text": "Please also confirm [TICKET_NUMBER] in writing.",
+          "expectedIntent": "request written confirmation",
+          "next": [
+            "n7"
+          ]
+        },
+        {
+          "id": "n6",
+          "speaker": "user",
+          "text": "Thank you. Please let us know once it is confirmed.",
+          "expectedIntent": "request confirmation",
+          "next": [
+            "n7"
+          ]
+        },
+        {
+          "id": "n7",
+          "speaker": "partner",
+          "text": "The request is recorded; we will update you shortly.",
+          "next": [
+            "n8"
+          ]
+        },
+        {
+          "id": "n8",
+          "speaker": "user",
+          "text": "Thank you for your assistance.",
+          "expectedIntent": "thanks",
+          "next": []
+        }
+      ],
+      "hints": [
+        "先礼貌说明要处理的事项。",
+        "用 [BOOKING_ID] 或订单号让对方可以定位记录。",
+        "明确要求确认状态或后续步骤。"
+      ],
+      "vocabulary": [
+        {
+          "term": "reservation",
+          "meaning": "预订（酒店）"
+        },
+        {
+          "term": "itinerary",
+          "meaning": "行程（航班）"
+        },
+        {
+          "term": "confirm",
+          "meaning": "确认"
+        }
+      ],
+      "phrases": [
+        {
+          "text": "Could you please check the booking and provide the current itinerary for [BOOKING_ID]?",
+          "meaning": "请协助核实该订单。"
+        },
+        {
+          "text": "Please let us know if any action is required.",
+          "meaning": "如需我们采取任何操作，请告知。"
+        }
+      ],
+      "commonErrors": [
+        "避免使用 reply me，应使用 reply to us 或 let us know。",
+        "不要承诺退款或补偿一定会成功。"
+      ],
+      "reference": {
+        "subject": "Ticketing Status and Ticket Number — [BOOKING_ID]",
+        "body": "Dear airline support team,\n\nCould you please check the booking and provide the current itinerary for [BOOKING_ID]? The traveller reference is [TICKET_NUMBER]. Please let us know if any action or additional information is required.\n\nThank you for your assistance.\nBest regards,\nOperations Team"
+      },
+      "scoring": {
+        "politenessTerms": [
+          "please",
+          "could you",
+          "would you",
+          "thank you"
+        ],
+        "minWords": 24,
+        "maxChatWords": 80
+      }
+    },
+    {
+      "id": "flight-email-02",
+      "version": "1.0.0",
+      "titleZh": "航班时刻变更",
+      "titleEn": "Schedule Change",
+      "category": "flight",
+      "channel": "email",
+      "difficulty": "beginner",
+      "duration": 8,
+      "context": "你是中文运营人员，需与航空公司核实「航班时刻变更」，避免作出未经确认的承诺。",
+      "userRole": "Operations coordinator",
+      "partnerRole": "airline support team",
+      "partnerMessage": "Hello, we need more details before we can assist with schedule change.",
+      "translation": "您好，我们需要更多信息才能协助处理航班时刻变更。",
+      "requiredObjectives": [
+        {
+          "id": "request",
+          "label": "礼貌说明请求",
+          "keywords": [
+            "could you",
+            "please",
+            "would you"
+          ],
+          "required": true
+        },
+        {
+          "id": "identify",
+          "label": "提供订单识别信息",
+          "keywords": [
+            "booking",
+            "reference",
+            "[booking_id]",
+            "[ticket_number]"
+          ],
+          "required": true
+        },
+        {
+          "id": "confirm",
+          "label": "请求书面确认或状态",
+          "keywords": [
+            "confirm",
+            "status",
+            "let us know"
+          ],
+          "required": true
+        }
+      ],
+      "optionalObjectives": [
+        {
+          "id": "thanks",
+          "label": "表达感谢",
+          "keywords": [
+            "thank",
+            "appreciate"
+          ],
+          "required": false
+        }
+      ],
+      "requiredEntities": [
+        "bookingId"
+      ],
+      "keywords": {
+        "confirm": [
+          "confirm",
+          "verify",
+          "check"
+        ],
+        "request": [
+          "could you",
+          "would you",
+          "please"
+        ],
+        "urgent": [
+          "urgent",
+          "as soon as possible"
+        ]
+      },
+      "nodes": [
+        {
+          "id": "n1",
+          "speaker": "partner",
+          "text": "Please share the booking reference for schedule change.",
+          "next": [
+            "n2",
+            "n3"
+          ]
+        },
+        {
+          "id": "n2",
+          "speaker": "user",
+          "text": "Could you please check the booking and provide the current itinerary for [BOOKING_ID]?",
+          "expectedIntent": "request confirmation",
+          "next": [
+            "n4"
+          ]
+        },
+        {
+          "id": "n3",
+          "speaker": "user",
+          "text": "Could you clarify which reference you require?",
+          "expectedIntent": "request clarification",
+          "next": [
+            "n4"
+          ]
+        },
+        {
+          "id": "n4",
+          "speaker": "partner",
+          "text": "We are checking the record now. Is there anything else to confirm?",
+          "next": [
+            "n5",
+            "n6"
+          ]
+        },
+        {
+          "id": "n5",
+          "speaker": "user",
+          "text": "Please also confirm [TICKET_NUMBER] in writing.",
+          "expectedIntent": "request written confirmation",
+          "next": [
+            "n7"
+          ]
+        },
+        {
+          "id": "n6",
+          "speaker": "user",
+          "text": "Thank you. Please let us know once it is confirmed.",
+          "expectedIntent": "request confirmation",
+          "next": [
+            "n7"
+          ]
+        },
+        {
+          "id": "n7",
+          "speaker": "partner",
+          "text": "The request is recorded; we will update you shortly.",
+          "next": [
+            "n8"
+          ]
+        },
+        {
+          "id": "n8",
+          "speaker": "user",
+          "text": "Thank you for your assistance.",
+          "expectedIntent": "thanks",
+          "next": []
+        }
+      ],
+      "hints": [
+        "先礼貌说明要处理的事项。",
+        "用 [BOOKING_ID] 或订单号让对方可以定位记录。",
+        "明确要求确认状态或后续步骤。"
+      ],
+      "vocabulary": [
+        {
+          "term": "reservation",
+          "meaning": "预订（酒店）"
+        },
+        {
+          "term": "itinerary",
+          "meaning": "行程（航班）"
+        },
+        {
+          "term": "confirm",
+          "meaning": "确认"
+        }
+      ],
+      "phrases": [
+        {
+          "text": "Could you please check the booking and provide the current itinerary for [BOOKING_ID]?",
+          "meaning": "请协助核实该订单。"
+        },
+        {
+          "text": "Please let us know if any action is required.",
+          "meaning": "如需我们采取任何操作，请告知。"
+        }
+      ],
+      "commonErrors": [
+        "避免使用 reply me，应使用 reply to us 或 let us know。",
+        "不要承诺退款或补偿一定会成功。"
+      ],
+      "reference": {
+        "subject": "Schedule Change — [BOOKING_ID]",
+        "body": "Dear airline support team,\n\nCould you please check the booking and provide the current itinerary for [BOOKING_ID]? The traveller reference is [TICKET_NUMBER]. Please let us know if any action or additional information is required.\n\nThank you for your assistance.\nBest regards,\nOperations Team"
+      },
+      "scoring": {
+        "politenessTerms": [
+          "please",
+          "could you",
+          "would you",
+          "thank you"
+        ],
+        "minWords": 24,
+        "maxChatWords": 80
+      }
+    },
+    {
+      "id": "flight-email-03",
+      "version": "1.0.0",
+      "titleZh": "航班取消和重新安排",
+      "titleEn": "Cancellation and Rebooking",
+      "category": "flight",
+      "channel": "email",
+      "difficulty": "beginner",
+      "duration": 8,
+      "context": "你是中文运营人员，需与航空公司核实「航班取消和重新安排」，避免作出未经确认的承诺。",
+      "userRole": "Operations coordinator",
+      "partnerRole": "airline support team",
+      "partnerMessage": "Hello, we need more details before we can assist with cancellation and rebooking.",
+      "translation": "您好，我们需要更多信息才能协助处理航班取消和重新安排。",
+      "requiredObjectives": [
+        {
+          "id": "request",
+          "label": "礼貌说明请求",
+          "keywords": [
+            "could you",
+            "please",
+            "would you"
+          ],
+          "required": true
+        },
+        {
+          "id": "identify",
+          "label": "提供订单识别信息",
+          "keywords": [
+            "booking",
+            "reference",
+            "[booking_id]",
+            "[ticket_number]"
+          ],
+          "required": true
+        },
+        {
+          "id": "confirm",
+          "label": "请求书面确认或状态",
+          "keywords": [
+            "confirm",
+            "status",
+            "let us know"
+          ],
+          "required": true
+        }
+      ],
+      "optionalObjectives": [
+        {
+          "id": "thanks",
+          "label": "表达感谢",
+          "keywords": [
+            "thank",
+            "appreciate"
+          ],
+          "required": false
+        }
+      ],
+      "requiredEntities": [
+        "bookingId"
+      ],
+      "keywords": {
+        "confirm": [
+          "confirm",
+          "verify",
+          "check"
+        ],
+        "request": [
+          "could you",
+          "would you",
+          "please"
+        ],
+        "urgent": [
+          "urgent",
+          "as soon as possible"
+        ]
+      },
+      "nodes": [
+        {
+          "id": "n1",
+          "speaker": "partner",
+          "text": "Please share the booking reference for cancellation and rebooking.",
+          "next": [
+            "n2",
+            "n3"
+          ]
+        },
+        {
+          "id": "n2",
+          "speaker": "user",
+          "text": "Could you please check the booking and provide the current itinerary for [BOOKING_ID]?",
+          "expectedIntent": "request confirmation",
+          "next": [
+            "n4"
+          ]
+        },
+        {
+          "id": "n3",
+          "speaker": "user",
+          "text": "Could you clarify which reference you require?",
+          "expectedIntent": "request clarification",
+          "next": [
+            "n4"
+          ]
+        },
+        {
+          "id": "n4",
+          "speaker": "partner",
+          "text": "We are checking the record now. Is there anything else to confirm?",
+          "next": [
+            "n5",
+            "n6"
+          ]
+        },
+        {
+          "id": "n5",
+          "speaker": "user",
+          "text": "Please also confirm [TICKET_NUMBER] in writing.",
+          "expectedIntent": "request written confirmation",
+          "next": [
+            "n7"
+          ]
+        },
+        {
+          "id": "n6",
+          "speaker": "user",
+          "text": "Thank you. Please let us know once it is confirmed.",
+          "expectedIntent": "request confirmation",
+          "next": [
+            "n7"
+          ]
+        },
+        {
+          "id": "n7",
+          "speaker": "partner",
+          "text": "The request is recorded; we will update you shortly.",
+          "next": [
+            "n8"
+          ]
+        },
+        {
+          "id": "n8",
+          "speaker": "user",
+          "text": "Thank you for your assistance.",
+          "expectedIntent": "thanks",
+          "next": []
+        }
+      ],
+      "hints": [
+        "先礼貌说明要处理的事项。",
+        "用 [BOOKING_ID] 或订单号让对方可以定位记录。",
+        "明确要求确认状态或后续步骤。"
+      ],
+      "vocabulary": [
+        {
+          "term": "reservation",
+          "meaning": "预订（酒店）"
+        },
+        {
+          "term": "itinerary",
+          "meaning": "行程（航班）"
+        },
+        {
+          "term": "confirm",
+          "meaning": "确认"
+        }
+      ],
+      "phrases": [
+        {
+          "text": "Could you please check the booking and provide the current itinerary for [BOOKING_ID]?",
+          "meaning": "请协助核实该订单。"
+        },
+        {
+          "text": "Please let us know if any action is required.",
+          "meaning": "如需我们采取任何操作，请告知。"
+        }
+      ],
+      "commonErrors": [
+        "避免使用 reply me，应使用 reply to us 或 let us know。",
+        "不要承诺退款或补偿一定会成功。"
+      ],
+      "reference": {
+        "subject": "Cancellation and Rebooking — [BOOKING_ID]",
+        "body": "Dear airline support team,\n\nCould you please check the booking and provide the current itinerary for [BOOKING_ID]? The traveller reference is [TICKET_NUMBER]. Please let us know if any action or additional information is required.\n\nThank you for your assistance.\nBest regards,\nOperations Team"
+      },
+      "scoring": {
+        "politenessTerms": [
+          "please",
+          "could you",
+          "would you",
+          "thank you"
+        ],
+        "minWords": 24,
+        "maxChatWords": 80
+      }
+    },
+    {
+      "id": "flight-email-04",
+      "version": "1.0.0",
+      "titleZh": "改签费用和新行程",
+      "titleEn": "Change Fee and New Itinerary",
+      "category": "flight",
+      "channel": "email",
+      "difficulty": "beginner",
+      "duration": 8,
+      "context": "你是中文运营人员，需与航空公司核实「改签费用和新行程」，避免作出未经确认的承诺。",
+      "userRole": "Operations coordinator",
+      "partnerRole": "airline support team",
+      "partnerMessage": "Hello, we need more details before we can assist with change fee and new itinerary.",
+      "translation": "您好，我们需要更多信息才能协助处理改签费用和新行程。",
+      "requiredObjectives": [
+        {
+          "id": "request",
+          "label": "礼貌说明请求",
+          "keywords": [
+            "could you",
+            "please",
+            "would you"
+          ],
+          "required": true
+        },
+        {
+          "id": "identify",
+          "label": "提供订单识别信息",
+          "keywords": [
+            "booking",
+            "reference",
+            "[booking_id]",
+            "[ticket_number]"
+          ],
+          "required": true
+        },
+        {
+          "id": "confirm",
+          "label": "请求书面确认或状态",
+          "keywords": [
+            "confirm",
+            "status",
+            "let us know"
+          ],
+          "required": true
+        }
+      ],
+      "optionalObjectives": [
+        {
+          "id": "thanks",
+          "label": "表达感谢",
+          "keywords": [
+            "thank",
+            "appreciate"
+          ],
+          "required": false
+        }
+      ],
+      "requiredEntities": [
+        "bookingId"
+      ],
+      "keywords": {
+        "confirm": [
+          "confirm",
+          "verify",
+          "check"
+        ],
+        "request": [
+          "could you",
+          "would you",
+          "please"
+        ],
+        "urgent": [
+          "urgent",
+          "as soon as possible"
+        ]
+      },
+      "nodes": [
+        {
+          "id": "n1",
+          "speaker": "partner",
+          "text": "Please share the booking reference for change fee and new itinerary.",
+          "next": [
+            "n2",
+            "n3"
+          ]
+        },
+        {
+          "id": "n2",
+          "speaker": "user",
+          "text": "Could you please check the booking and provide the current itinerary for [BOOKING_ID]?",
+          "expectedIntent": "request confirmation",
+          "next": [
+            "n4"
+          ]
+        },
+        {
+          "id": "n3",
+          "speaker": "user",
+          "text": "Could you clarify which reference you require?",
+          "expectedIntent": "request clarification",
+          "next": [
+            "n4"
+          ]
+        },
+        {
+          "id": "n4",
+          "speaker": "partner",
+          "text": "We are checking the record now. Is there anything else to confirm?",
+          "next": [
+            "n5",
+            "n6"
+          ]
+        },
+        {
+          "id": "n5",
+          "speaker": "user",
+          "text": "Please also confirm [TICKET_NUMBER] in writing.",
+          "expectedIntent": "request written confirmation",
+          "next": [
+            "n7"
+          ]
+        },
+        {
+          "id": "n6",
+          "speaker": "user",
+          "text": "Thank you. Please let us know once it is confirmed.",
+          "expectedIntent": "request confirmation",
+          "next": [
+            "n7"
+          ]
+        },
+        {
+          "id": "n7",
+          "speaker": "partner",
+          "text": "The request is recorded; we will update you shortly.",
+          "next": [
+            "n8"
+          ]
+        },
+        {
+          "id": "n8",
+          "speaker": "user",
+          "text": "Thank you for your assistance.",
+          "expectedIntent": "thanks",
+          "next": []
+        }
+      ],
+      "hints": [
+        "先礼貌说明要处理的事项。",
+        "用 [BOOKING_ID] 或订单号让对方可以定位记录。",
+        "明确要求确认状态或后续步骤。"
+      ],
+      "vocabulary": [
+        {
+          "term": "reservation",
+          "meaning": "预订（酒店）"
+        },
+        {
+          "term": "itinerary",
+          "meaning": "行程（航班）"
+        },
+        {
+          "term": "confirm",
+          "meaning": "确认"
+        }
+      ],
+      "phrases": [
+        {
+          "text": "Could you please check the booking and provide the current itinerary for [BOOKING_ID]?",
+          "meaning": "请协助核实该订单。"
+        },
+        {
+          "text": "Please let us know if any action is required.",
+          "meaning": "如需我们采取任何操作，请告知。"
+        }
+      ],
+      "commonErrors": [
+        "避免使用 reply me，应使用 reply to us 或 let us know。",
+        "不要承诺退款或补偿一定会成功。"
+      ],
+      "reference": {
+        "subject": "Change Fee and New Itinerary — [BOOKING_ID]",
+        "body": "Dear airline support team,\n\nCould you please check the booking and provide the current itinerary for [BOOKING_ID]? The traveller reference is [TICKET_NUMBER]. Please let us know if any action or additional information is required.\n\nThank you for your assistance.\nBest regards,\nOperations Team"
+      },
+      "scoring": {
+        "politenessTerms": [
+          "please",
+          "could you",
+          "would you",
+          "thank you"
+        ],
+        "minWords": 24,
+        "maxChatWords": 80
+      }
+    },
+    {
+      "id": "flight-email-05",
+      "version": "1.0.0",
+      "titleZh": "退票和退款进度",
+      "titleEn": "Refund Status",
+      "category": "flight",
+      "channel": "email",
+      "difficulty": "intermediate",
+      "duration": 8,
+      "context": "你是中文运营人员，需与航空公司核实「退票和退款进度」，避免作出未经确认的承诺。",
+      "userRole": "Operations coordinator",
+      "partnerRole": "airline support team",
+      "partnerMessage": "Hello, we need more details before we can assist with refund status.",
+      "translation": "您好，我们需要更多信息才能协助处理退票和退款进度。",
+      "requiredObjectives": [
+        {
+          "id": "request",
+          "label": "礼貌说明请求",
+          "keywords": [
+            "could you",
+            "please",
+            "would you"
+          ],
+          "required": true
+        },
+        {
+          "id": "identify",
+          "label": "提供订单识别信息",
+          "keywords": [
+            "booking",
+            "reference",
+            "[booking_id]",
+            "[ticket_number]"
+          ],
+          "required": true
+        },
+        {
+          "id": "confirm",
+          "label": "请求书面确认或状态",
+          "keywords": [
+            "confirm",
+            "status",
+            "let us know"
+          ],
+          "required": true
+        }
+      ],
+      "optionalObjectives": [
+        {
+          "id": "thanks",
+          "label": "表达感谢",
+          "keywords": [
+            "thank",
+            "appreciate"
+          ],
+          "required": false
+        }
+      ],
+      "requiredEntities": [
+        "bookingId"
+      ],
+      "keywords": {
+        "confirm": [
+          "confirm",
+          "verify",
+          "check"
+        ],
+        "request": [
+          "could you",
+          "would you",
+          "please"
+        ],
+        "urgent": [
+          "urgent",
+          "as soon as possible"
+        ]
+      },
+      "nodes": [
+        {
+          "id": "n1",
+          "speaker": "partner",
+          "text": "Please share the booking reference for refund status.",
+          "next": [
+            "n2",
+            "n3"
+          ]
+        },
+        {
+          "id": "n2",
+          "speaker": "user",
+          "text": "Could you please check the booking and provide the current itinerary for [BOOKING_ID]?",
+          "expectedIntent": "request confirmation",
+          "next": [
+            "n4"
+          ]
+        },
+        {
+          "id": "n3",
+          "speaker": "user",
+          "text": "Could you clarify which reference you require?",
+          "expectedIntent": "request clarification",
+          "next": [
+            "n4"
+          ]
+        },
+        {
+          "id": "n4",
+          "speaker": "partner",
+          "text": "We are checking the record now. Is there anything else to confirm?",
+          "next": [
+            "n5",
+            "n6"
+          ]
+        },
+        {
+          "id": "n5",
+          "speaker": "user",
+          "text": "Please also confirm [TICKET_NUMBER] in writing.",
+          "expectedIntent": "request written confirmation",
+          "next": [
+            "n7"
+          ]
+        },
+        {
+          "id": "n6",
+          "speaker": "user",
+          "text": "Thank you. Please let us know once it is confirmed.",
+          "expectedIntent": "request confirmation",
+          "next": [
+            "n7"
+          ]
+        },
+        {
+          "id": "n7",
+          "speaker": "partner",
+          "text": "The request is recorded; we will update you shortly.",
+          "next": [
+            "n8"
+          ]
+        },
+        {
+          "id": "n8",
+          "speaker": "user",
+          "text": "Thank you for your assistance.",
+          "expectedIntent": "thanks",
+          "next": []
+        }
+      ],
+      "hints": [
+        "先礼貌说明要处理的事项。",
+        "用 [BOOKING_ID] 或订单号让对方可以定位记录。",
+        "明确要求确认状态或后续步骤。"
+      ],
+      "vocabulary": [
+        {
+          "term": "reservation",
+          "meaning": "预订（酒店）"
+        },
+        {
+          "term": "itinerary",
+          "meaning": "行程（航班）"
+        },
+        {
+          "term": "confirm",
+          "meaning": "确认"
+        }
+      ],
+      "phrases": [
+        {
+          "text": "Could you please check the booking and provide the current itinerary for [BOOKING_ID]?",
+          "meaning": "请协助核实该订单。"
+        },
+        {
+          "text": "Please let us know if any action is required.",
+          "meaning": "如需我们采取任何操作，请告知。"
+        }
+      ],
+      "commonErrors": [
+        "避免使用 reply me，应使用 reply to us 或 let us know。",
+        "不要承诺退款或补偿一定会成功。"
+      ],
+      "reference": {
+        "subject": "Refund Status — [BOOKING_ID]",
+        "body": "Dear airline support team,\n\nCould you please check the booking and provide the current itinerary for [BOOKING_ID]? The traveller reference is [TICKET_NUMBER]. Please let us know if any action or additional information is required.\n\nThank you for your assistance.\nBest regards,\nOperations Team"
+      },
+      "scoring": {
+        "politenessTerms": [
+          "please",
+          "could you",
+          "would you",
+          "thank you"
+        ],
+        "minWords": 24,
+        "maxChatWords": 80
+      }
+    },
+    {
+      "id": "flight-email-06",
+      "version": "1.0.0",
+      "titleZh": "票价规则",
+      "titleEn": "Fare Rules",
+      "category": "flight",
+      "channel": "email",
+      "difficulty": "intermediate",
+      "duration": 8,
+      "context": "你是中文运营人员，需与航空公司核实「票价规则」，避免作出未经确认的承诺。",
+      "userRole": "Operations coordinator",
+      "partnerRole": "airline support team",
+      "partnerMessage": "Hello, we need more details before we can assist with fare rules.",
+      "translation": "您好，我们需要更多信息才能协助处理票价规则。",
+      "requiredObjectives": [
+        {
+          "id": "request",
+          "label": "礼貌说明请求",
+          "keywords": [
+            "could you",
+            "please",
+            "would you"
+          ],
+          "required": true
+        },
+        {
+          "id": "identify",
+          "label": "提供订单识别信息",
+          "keywords": [
+            "booking",
+            "reference",
+            "[booking_id]",
+            "[ticket_number]"
+          ],
+          "required": true
+        },
+        {
+          "id": "confirm",
+          "label": "请求书面确认或状态",
+          "keywords": [
+            "confirm",
+            "status",
+            "let us know"
+          ],
+          "required": true
+        }
+      ],
+      "optionalObjectives": [
+        {
+          "id": "thanks",
+          "label": "表达感谢",
+          "keywords": [
+            "thank",
+            "appreciate"
+          ],
+          "required": false
+        }
+      ],
+      "requiredEntities": [
+        "bookingId"
+      ],
+      "keywords": {
+        "confirm": [
+          "confirm",
+          "verify",
+          "check"
+        ],
+        "request": [
+          "could you",
+          "would you",
+          "please"
+        ],
+        "urgent": [
+          "urgent",
+          "as soon as possible"
+        ]
+      },
+      "nodes": [
+        {
+          "id": "n1",
+          "speaker": "partner",
+          "text": "Please share the booking reference for fare rules.",
+          "next": [
+            "n2",
+            "n3"
+          ]
+        },
+        {
+          "id": "n2",
+          "speaker": "user",
+          "text": "Could you please check the booking and provide the current itinerary for [BOOKING_ID]?",
+          "expectedIntent": "request confirmation",
+          "next": [
+            "n4"
+          ]
+        },
+        {
+          "id": "n3",
+          "speaker": "user",
+          "text": "Could you clarify which reference you require?",
+          "expectedIntent": "request clarification",
+          "next": [
+            "n4"
+          ]
+        },
+        {
+          "id": "n4",
+          "speaker": "partner",
+          "text": "We are checking the record now. Is there anything else to confirm?",
+          "next": [
+            "n5",
+            "n6"
+          ]
+        },
+        {
+          "id": "n5",
+          "speaker": "user",
+          "text": "Please also confirm [TICKET_NUMBER] in writing.",
+          "expectedIntent": "request written confirmation",
+          "next": [
+            "n7"
+          ]
+        },
+        {
+          "id": "n6",
+          "speaker": "user",
+          "text": "Thank you. Please let us know once it is confirmed.",
+          "expectedIntent": "request confirmation",
+          "next": [
+            "n7"
+          ]
+        },
+        {
+          "id": "n7",
+          "speaker": "partner",
+          "text": "The request is recorded; we will update you shortly.",
+          "next": [
+            "n8"
+          ]
+        },
+        {
+          "id": "n8",
+          "speaker": "user",
+          "text": "Thank you for your assistance.",
+          "expectedIntent": "thanks",
+          "next": []
+        }
+      ],
+      "hints": [
+        "先礼貌说明要处理的事项。",
+        "用 [BOOKING_ID] 或订单号让对方可以定位记录。",
+        "明确要求确认状态或后续步骤。"
+      ],
+      "vocabulary": [
+        {
+          "term": "reservation",
+          "meaning": "预订（酒店）"
+        },
+        {
+          "term": "itinerary",
+          "meaning": "行程（航班）"
+        },
+        {
+          "term": "confirm",
+          "meaning": "确认"
+        }
+      ],
+      "phrases": [
+        {
+          "text": "Could you please check the booking and provide the current itinerary for [BOOKING_ID]?",
+          "meaning": "请协助核实该订单。"
+        },
+        {
+          "text": "Please let us know if any action is required.",
+          "meaning": "如需我们采取任何操作，请告知。"
+        }
+      ],
+      "commonErrors": [
+        "避免使用 reply me，应使用 reply to us 或 let us know。",
+        "不要承诺退款或补偿一定会成功。"
+      ],
+      "reference": {
+        "subject": "Fare Rules — [BOOKING_ID]",
+        "body": "Dear airline support team,\n\nCould you please check the booking and provide the current itinerary for [BOOKING_ID]? The traveller reference is [TICKET_NUMBER]. Please let us know if any action or additional information is required.\n\nThank you for your assistance.\nBest regards,\nOperations Team"
+      },
+      "scoring": {
+        "politenessTerms": [
+          "please",
+          "could you",
+          "would you",
+          "thank you"
+        ],
+        "minWords": 24,
+        "maxChatWords": 80
+      }
+    },
+    {
+      "id": "flight-email-07",
+      "version": "1.0.0",
+      "titleZh": "姓名更正",
+      "titleEn": "Name Correction",
+      "category": "flight",
+      "channel": "email",
+      "difficulty": "intermediate",
+      "duration": 8,
+      "context": "你是中文运营人员，需与航空公司核实「姓名更正」，避免作出未经确认的承诺。",
+      "userRole": "Operations coordinator",
+      "partnerRole": "airline support team",
+      "partnerMessage": "Hello, we need more details before we can assist with name correction.",
+      "translation": "您好，我们需要更多信息才能协助处理姓名更正。",
+      "requiredObjectives": [
+        {
+          "id": "request",
+          "label": "礼貌说明请求",
+          "keywords": [
+            "could you",
+            "please",
+            "would you"
+          ],
+          "required": true
+        },
+        {
+          "id": "identify",
+          "label": "提供订单识别信息",
+          "keywords": [
+            "booking",
+            "reference",
+            "[booking_id]",
+            "[ticket_number]"
+          ],
+          "required": true
+        },
+        {
+          "id": "confirm",
+          "label": "请求书面确认或状态",
+          "keywords": [
+            "confirm",
+            "status",
+            "let us know"
+          ],
+          "required": true
+        }
+      ],
+      "optionalObjectives": [
+        {
+          "id": "thanks",
+          "label": "表达感谢",
+          "keywords": [
+            "thank",
+            "appreciate"
+          ],
+          "required": false
+        }
+      ],
+      "requiredEntities": [
+        "bookingId"
+      ],
+      "keywords": {
+        "confirm": [
+          "confirm",
+          "verify",
+          "check"
+        ],
+        "request": [
+          "could you",
+          "would you",
+          "please"
+        ],
+        "urgent": [
+          "urgent",
+          "as soon as possible"
+        ]
+      },
+      "nodes": [
+        {
+          "id": "n1",
+          "speaker": "partner",
+          "text": "Please share the booking reference for name correction.",
+          "next": [
+            "n2",
+            "n3"
+          ]
+        },
+        {
+          "id": "n2",
+          "speaker": "user",
+          "text": "Could you please check the booking and provide the current itinerary for [BOOKING_ID]?",
+          "expectedIntent": "request confirmation",
+          "next": [
+            "n4"
+          ]
+        },
+        {
+          "id": "n3",
+          "speaker": "user",
+          "text": "Could you clarify which reference you require?",
+          "expectedIntent": "request clarification",
+          "next": [
+            "n4"
+          ]
+        },
+        {
+          "id": "n4",
+          "speaker": "partner",
+          "text": "We are checking the record now. Is there anything else to confirm?",
+          "next": [
+            "n5",
+            "n6"
+          ]
+        },
+        {
+          "id": "n5",
+          "speaker": "user",
+          "text": "Please also confirm [TICKET_NUMBER] in writing.",
+          "expectedIntent": "request written confirmation",
+          "next": [
+            "n7"
+          ]
+        },
+        {
+          "id": "n6",
+          "speaker": "user",
+          "text": "Thank you. Please let us know once it is confirmed.",
+          "expectedIntent": "request confirmation",
+          "next": [
+            "n7"
+          ]
+        },
+        {
+          "id": "n7",
+          "speaker": "partner",
+          "text": "The request is recorded; we will update you shortly.",
+          "next": [
+            "n8"
+          ]
+        },
+        {
+          "id": "n8",
+          "speaker": "user",
+          "text": "Thank you for your assistance.",
+          "expectedIntent": "thanks",
+          "next": []
+        }
+      ],
+      "hints": [
+        "先礼貌说明要处理的事项。",
+        "用 [BOOKING_ID] 或订单号让对方可以定位记录。",
+        "明确要求确认状态或后续步骤。"
+      ],
+      "vocabulary": [
+        {
+          "term": "reservation",
+          "meaning": "预订（酒店）"
+        },
+        {
+          "term": "itinerary",
+          "meaning": "行程（航班）"
+        },
+        {
+          "term": "confirm",
+          "meaning": "确认"
+        }
+      ],
+      "phrases": [
+        {
+          "text": "Could you please check the booking and provide the current itinerary for [BOOKING_ID]?",
+          "meaning": "请协助核实该订单。"
+        },
+        {
+          "text": "Please let us know if any action is required.",
+          "meaning": "如需我们采取任何操作，请告知。"
+        }
+      ],
+      "commonErrors": [
+        "避免使用 reply me，应使用 reply to us 或 let us know。",
+        "不要承诺退款或补偿一定会成功。"
+      ],
+      "reference": {
+        "subject": "Name Correction — [BOOKING_ID]",
+        "body": "Dear airline support team,\n\nCould you please check the booking and provide the current itinerary for [BOOKING_ID]? The traveller reference is [TICKET_NUMBER]. Please let us know if any action or additional information is required.\n\nThank you for your assistance.\nBest regards,\nOperations Team"
+      },
+      "scoring": {
+        "politenessTerms": [
+          "please",
+          "could you",
+          "would you",
+          "thank you"
+        ],
+        "minWords": 24,
+        "maxChatWords": 80
+      }
+    },
+    {
+      "id": "flight-email-08",
+      "version": "1.0.0",
+      "titleZh": "护照信息更新",
+      "titleEn": "Passport Information Update",
+      "category": "flight",
+      "channel": "email",
+      "difficulty": "intermediate",
+      "duration": 8,
+      "context": "你是中文运营人员，需与航空公司核实「护照信息更新」，避免作出未经确认的承诺。",
+      "userRole": "Operations coordinator",
+      "partnerRole": "airline support team",
+      "partnerMessage": "Hello, we need more details before we can assist with passport information update.",
+      "translation": "您好，我们需要更多信息才能协助处理护照信息更新。",
+      "requiredObjectives": [
+        {
+          "id": "request",
+          "label": "礼貌说明请求",
+          "keywords": [
+            "could you",
+            "please",
+            "would you"
+          ],
+          "required": true
+        },
+        {
+          "id": "identify",
+          "label": "提供订单识别信息",
+          "keywords": [
+            "booking",
+            "reference",
+            "[booking_id]",
+            "[ticket_number]"
+          ],
+          "required": true
+        },
+        {
+          "id": "confirm",
+          "label": "请求书面确认或状态",
+          "keywords": [
+            "confirm",
+            "status",
+            "let us know"
+          ],
+          "required": true
+        }
+      ],
+      "optionalObjectives": [
+        {
+          "id": "thanks",
+          "label": "表达感谢",
+          "keywords": [
+            "thank",
+            "appreciate"
+          ],
+          "required": false
+        }
+      ],
+      "requiredEntities": [
+        "bookingId"
+      ],
+      "keywords": {
+        "confirm": [
+          "confirm",
+          "verify",
+          "check"
+        ],
+        "request": [
+          "could you",
+          "would you",
+          "please"
+        ],
+        "urgent": [
+          "urgent",
+          "as soon as possible"
+        ]
+      },
+      "nodes": [
+        {
+          "id": "n1",
+          "speaker": "partner",
+          "text": "Please share the booking reference for passport information update.",
+          "next": [
+            "n2",
+            "n3"
+          ]
+        },
+        {
+          "id": "n2",
+          "speaker": "user",
+          "text": "Could you please check the booking and provide the current itinerary for [BOOKING_ID]?",
+          "expectedIntent": "request confirmation",
+          "next": [
+            "n4"
+          ]
+        },
+        {
+          "id": "n3",
+          "speaker": "user",
+          "text": "Could you clarify which reference you require?",
+          "expectedIntent": "request clarification",
+          "next": [
+            "n4"
+          ]
+        },
+        {
+          "id": "n4",
+          "speaker": "partner",
+          "text": "We are checking the record now. Is there anything else to confirm?",
+          "next": [
+            "n5",
+            "n6"
+          ]
+        },
+        {
+          "id": "n5",
+          "speaker": "user",
+          "text": "Please also confirm [TICKET_NUMBER] in writing.",
+          "expectedIntent": "request written confirmation",
+          "next": [
+            "n7"
+          ]
+        },
+        {
+          "id": "n6",
+          "speaker": "user",
+          "text": "Thank you. Please let us know once it is confirmed.",
+          "expectedIntent": "request confirmation",
+          "next": [
+            "n7"
+          ]
+        },
+        {
+          "id": "n7",
+          "speaker": "partner",
+          "text": "The request is recorded; we will update you shortly.",
+          "next": [
+            "n8"
+          ]
+        },
+        {
+          "id": "n8",
+          "speaker": "user",
+          "text": "Thank you for your assistance.",
+          "expectedIntent": "thanks",
+          "next": []
+        }
+      ],
+      "hints": [
+        "先礼貌说明要处理的事项。",
+        "用 [BOOKING_ID] 或订单号让对方可以定位记录。",
+        "明确要求确认状态或后续步骤。"
+      ],
+      "vocabulary": [
+        {
+          "term": "reservation",
+          "meaning": "预订（酒店）"
+        },
+        {
+          "term": "itinerary",
+          "meaning": "行程（航班）"
+        },
+        {
+          "term": "confirm",
+          "meaning": "确认"
+        }
+      ],
+      "phrases": [
+        {
+          "text": "Could you please check the booking and provide the current itinerary for [BOOKING_ID]?",
+          "meaning": "请协助核实该订单。"
+        },
+        {
+          "text": "Please let us know if any action is required.",
+          "meaning": "如需我们采取任何操作，请告知。"
+        }
+      ],
+      "commonErrors": [
+        "避免使用 reply me，应使用 reply to us 或 let us know。",
+        "不要承诺退款或补偿一定会成功。"
+      ],
+      "reference": {
+        "subject": "Passport Information Update — [BOOKING_ID]",
+        "body": "Dear airline support team,\n\nCould you please check the booking and provide the current itinerary for [BOOKING_ID]? The traveller reference is [TICKET_NUMBER]. Please let us know if any action or additional information is required.\n\nThank you for your assistance.\nBest regards,\nOperations Team"
+      },
+      "scoring": {
+        "politenessTerms": [
+          "please",
+          "could you",
+          "would you",
+          "thank you"
+        ],
+        "minWords": 24,
+        "maxChatWords": 80
+      }
+    },
+    {
+      "id": "flight-email-09",
+      "version": "1.0.0",
+      "titleZh": "行李额度和超额行李",
+      "titleEn": "Baggage Allowance and Excess Baggage",
+      "category": "flight",
+      "channel": "email",
+      "difficulty": "intermediate",
+      "duration": 8,
+      "context": "你是中文运营人员，需与航空公司核实「行李额度和超额行李」，避免作出未经确认的承诺。",
+      "userRole": "Operations coordinator",
+      "partnerRole": "airline support team",
+      "partnerMessage": "Hello, we need more details before we can assist with baggage allowance and excess baggage.",
+      "translation": "您好，我们需要更多信息才能协助处理行李额度和超额行李。",
+      "requiredObjectives": [
+        {
+          "id": "request",
+          "label": "礼貌说明请求",
+          "keywords": [
+            "could you",
+            "please",
+            "would you"
+          ],
+          "required": true
+        },
+        {
+          "id": "identify",
+          "label": "提供订单识别信息",
+          "keywords": [
+            "booking",
+            "reference",
+            "[booking_id]",
+            "[ticket_number]"
+          ],
+          "required": true
+        },
+        {
+          "id": "confirm",
+          "label": "请求书面确认或状态",
+          "keywords": [
+            "confirm",
+            "status",
+            "let us know"
+          ],
+          "required": true
+        }
+      ],
+      "optionalObjectives": [
+        {
+          "id": "thanks",
+          "label": "表达感谢",
+          "keywords": [
+            "thank",
+            "appreciate"
+          ],
+          "required": false
+        }
+      ],
+      "requiredEntities": [
+        "bookingId"
+      ],
+      "keywords": {
+        "confirm": [
+          "confirm",
+          "verify",
+          "check"
+        ],
+        "request": [
+          "could you",
+          "would you",
+          "please"
+        ],
+        "urgent": [
+          "urgent",
+          "as soon as possible"
+        ]
+      },
+      "nodes": [
+        {
+          "id": "n1",
+          "speaker": "partner",
+          "text": "Please share the booking reference for baggage allowance and excess baggage.",
+          "next": [
+            "n2",
+            "n3"
+          ]
+        },
+        {
+          "id": "n2",
+          "speaker": "user",
+          "text": "Could you please check the booking and provide the current itinerary for [BOOKING_ID]?",
+          "expectedIntent": "request confirmation",
+          "next": [
+            "n4"
+          ]
+        },
+        {
+          "id": "n3",
+          "speaker": "user",
+          "text": "Could you clarify which reference you require?",
+          "expectedIntent": "request clarification",
+          "next": [
+            "n4"
+          ]
+        },
+        {
+          "id": "n4",
+          "speaker": "partner",
+          "text": "We are checking the record now. Is there anything else to confirm?",
+          "next": [
+            "n5",
+            "n6"
+          ]
+        },
+        {
+          "id": "n5",
+          "speaker": "user",
+          "text": "Please also confirm [TICKET_NUMBER] in writing.",
+          "expectedIntent": "request written confirmation",
+          "next": [
+            "n7"
+          ]
+        },
+        {
+          "id": "n6",
+          "speaker": "user",
+          "text": "Thank you. Please let us know once it is confirmed.",
+          "expectedIntent": "request confirmation",
+          "next": [
+            "n7"
+          ]
+        },
+        {
+          "id": "n7",
+          "speaker": "partner",
+          "text": "The request is recorded; we will update you shortly.",
+          "next": [
+            "n8"
+          ]
+        },
+        {
+          "id": "n8",
+          "speaker": "user",
+          "text": "Thank you for your assistance.",
+          "expectedIntent": "thanks",
+          "next": []
+        }
+      ],
+      "hints": [
+        "先礼貌说明要处理的事项。",
+        "用 [BOOKING_ID] 或订单号让对方可以定位记录。",
+        "明确要求确认状态或后续步骤。"
+      ],
+      "vocabulary": [
+        {
+          "term": "reservation",
+          "meaning": "预订（酒店）"
+        },
+        {
+          "term": "itinerary",
+          "meaning": "行程（航班）"
+        },
+        {
+          "term": "confirm",
+          "meaning": "确认"
+        }
+      ],
+      "phrases": [
+        {
+          "text": "Could you please check the booking and provide the current itinerary for [BOOKING_ID]?",
+          "meaning": "请协助核实该订单。"
+        },
+        {
+          "text": "Please let us know if any action is required.",
+          "meaning": "如需我们采取任何操作，请告知。"
+        }
+      ],
+      "commonErrors": [
+        "避免使用 reply me，应使用 reply to us 或 let us know。",
+        "不要承诺退款或补偿一定会成功。"
+      ],
+      "reference": {
+        "subject": "Baggage Allowance and Excess Baggage — [BOOKING_ID]",
+        "body": "Dear airline support team,\n\nCould you please check the booking and provide the current itinerary for [BOOKING_ID]? The traveller reference is [TICKET_NUMBER]. Please let us know if any action or additional information is required.\n\nThank you for your assistance.\nBest regards,\nOperations Team"
+      },
+      "scoring": {
+        "politenessTerms": [
+          "please",
+          "could you",
+          "would you",
+          "thank you"
+        ],
+        "minWords": 24,
+        "maxChatWords": 80
+      }
+    },
+    {
+      "id": "flight-email-10",
+      "version": "1.0.0",
+      "titleZh": "座位餐食和特殊服务",
+      "titleEn": "Seat, Meal and Special Service",
+      "category": "flight",
+      "channel": "email",
+      "difficulty": "advanced",
+      "duration": 8,
+      "context": "你是中文运营人员，需与航空公司核实「座位餐食和特殊服务」，避免作出未经确认的承诺。",
+      "userRole": "Operations coordinator",
+      "partnerRole": "airline support team",
+      "partnerMessage": "Hello, we need more details before we can assist with seat, meal and special service.",
+      "translation": "您好，我们需要更多信息才能协助处理座位餐食和特殊服务。",
+      "requiredObjectives": [
+        {
+          "id": "request",
+          "label": "礼貌说明请求",
+          "keywords": [
+            "could you",
+            "please",
+            "would you"
+          ],
+          "required": true
+        },
+        {
+          "id": "identify",
+          "label": "提供订单识别信息",
+          "keywords": [
+            "booking",
+            "reference",
+            "[booking_id]",
+            "[ticket_number]"
+          ],
+          "required": true
+        },
+        {
+          "id": "confirm",
+          "label": "请求书面确认或状态",
+          "keywords": [
+            "confirm",
+            "status",
+            "let us know"
+          ],
+          "required": true
+        }
+      ],
+      "optionalObjectives": [
+        {
+          "id": "thanks",
+          "label": "表达感谢",
+          "keywords": [
+            "thank",
+            "appreciate"
+          ],
+          "required": false
+        }
+      ],
+      "requiredEntities": [
+        "bookingId"
+      ],
+      "keywords": {
+        "confirm": [
+          "confirm",
+          "verify",
+          "check"
+        ],
+        "request": [
+          "could you",
+          "would you",
+          "please"
+        ],
+        "urgent": [
+          "urgent",
+          "as soon as possible"
+        ]
+      },
+      "nodes": [
+        {
+          "id": "n1",
+          "speaker": "partner",
+          "text": "Please share the booking reference for seat, meal and special service.",
+          "next": [
+            "n2",
+            "n3"
+          ]
+        },
+        {
+          "id": "n2",
+          "speaker": "user",
+          "text": "Could you please check the booking and provide the current itinerary for [BOOKING_ID]?",
+          "expectedIntent": "request confirmation",
+          "next": [
+            "n4"
+          ]
+        },
+        {
+          "id": "n3",
+          "speaker": "user",
+          "text": "Could you clarify which reference you require?",
+          "expectedIntent": "request clarification",
+          "next": [
+            "n4"
+          ]
+        },
+        {
+          "id": "n4",
+          "speaker": "partner",
+          "text": "We are checking the record now. Is there anything else to confirm?",
+          "next": [
+            "n5",
+            "n6"
+          ]
+        },
+        {
+          "id": "n5",
+          "speaker": "user",
+          "text": "Please also confirm [TICKET_NUMBER] in writing.",
+          "expectedIntent": "request written confirmation",
+          "next": [
+            "n7"
+          ]
+        },
+        {
+          "id": "n6",
+          "speaker": "user",
+          "text": "Thank you. Please let us know once it is confirmed.",
+          "expectedIntent": "request confirmation",
+          "next": [
+            "n7"
+          ]
+        },
+        {
+          "id": "n7",
+          "speaker": "partner",
+          "text": "The request is recorded; we will update you shortly.",
+          "next": [
+            "n8"
+          ]
+        },
+        {
+          "id": "n8",
+          "speaker": "user",
+          "text": "Thank you for your assistance.",
+          "expectedIntent": "thanks",
+          "next": []
+        }
+      ],
+      "hints": [
+        "先礼貌说明要处理的事项。",
+        "用 [BOOKING_ID] 或订单号让对方可以定位记录。",
+        "明确要求确认状态或后续步骤。"
+      ],
+      "vocabulary": [
+        {
+          "term": "reservation",
+          "meaning": "预订（酒店）"
+        },
+        {
+          "term": "itinerary",
+          "meaning": "行程（航班）"
+        },
+        {
+          "term": "confirm",
+          "meaning": "确认"
+        }
+      ],
+      "phrases": [
+        {
+          "text": "Could you please check the booking and provide the current itinerary for [BOOKING_ID]?",
+          "meaning": "请协助核实该订单。"
+        },
+        {
+          "text": "Please let us know if any action is required.",
+          "meaning": "如需我们采取任何操作，请告知。"
+        }
+      ],
+      "commonErrors": [
+        "避免使用 reply me，应使用 reply to us 或 let us know。",
+        "不要承诺退款或补偿一定会成功。"
+      ],
+      "reference": {
+        "subject": "Seat, Meal and Special Service — [BOOKING_ID]",
+        "body": "Dear airline support team,\n\nCould you please check the booking and provide the current itinerary for [BOOKING_ID]? The traveller reference is [TICKET_NUMBER]. Please let us know if any action or additional information is required.\n\nThank you for your assistance.\nBest regards,\nOperations Team"
+      },
+      "scoring": {
+        "politenessTerms": [
+          "please",
+          "could you",
+          "would you",
+          "thank you"
+        ],
+        "minWords": 24,
+        "maxChatWords": 80
+      }
+    },
+    {
+      "id": "flight-email-11",
+      "version": "1.0.0",
+      "titleZh": "中转衔接和误机",
+      "titleEn": "Connection and Missed Flight",
+      "category": "flight",
+      "channel": "email",
+      "difficulty": "advanced",
+      "duration": 8,
+      "context": "你是中文运营人员，需与航空公司核实「中转衔接和误机」，避免作出未经确认的承诺。",
+      "userRole": "Operations coordinator",
+      "partnerRole": "airline support team",
+      "partnerMessage": "Hello, we need more details before we can assist with connection and missed flight.",
+      "translation": "您好，我们需要更多信息才能协助处理中转衔接和误机。",
+      "requiredObjectives": [
+        {
+          "id": "request",
+          "label": "礼貌说明请求",
+          "keywords": [
+            "could you",
+            "please",
+            "would you"
+          ],
+          "required": true
+        },
+        {
+          "id": "identify",
+          "label": "提供订单识别信息",
+          "keywords": [
+            "booking",
+            "reference",
+            "[booking_id]",
+            "[ticket_number]"
+          ],
+          "required": true
+        },
+        {
+          "id": "confirm",
+          "label": "请求书面确认或状态",
+          "keywords": [
+            "confirm",
+            "status",
+            "let us know"
+          ],
+          "required": true
+        }
+      ],
+      "optionalObjectives": [
+        {
+          "id": "thanks",
+          "label": "表达感谢",
+          "keywords": [
+            "thank",
+            "appreciate"
+          ],
+          "required": false
+        }
+      ],
+      "requiredEntities": [
+        "bookingId"
+      ],
+      "keywords": {
+        "confirm": [
+          "confirm",
+          "verify",
+          "check"
+        ],
+        "request": [
+          "could you",
+          "would you",
+          "please"
+        ],
+        "urgent": [
+          "urgent",
+          "as soon as possible"
+        ]
+      },
+      "nodes": [
+        {
+          "id": "n1",
+          "speaker": "partner",
+          "text": "Please share the booking reference for connection and missed flight.",
+          "next": [
+            "n2",
+            "n3"
+          ]
+        },
+        {
+          "id": "n2",
+          "speaker": "user",
+          "text": "Could you please check the booking and provide the current itinerary for [BOOKING_ID]?",
+          "expectedIntent": "request confirmation",
+          "next": [
+            "n4"
+          ]
+        },
+        {
+          "id": "n3",
+          "speaker": "user",
+          "text": "Could you clarify which reference you require?",
+          "expectedIntent": "request clarification",
+          "next": [
+            "n4"
+          ]
+        },
+        {
+          "id": "n4",
+          "speaker": "partner",
+          "text": "We are checking the record now. Is there anything else to confirm?",
+          "next": [
+            "n5",
+            "n6"
+          ]
+        },
+        {
+          "id": "n5",
+          "speaker": "user",
+          "text": "Please also confirm [TICKET_NUMBER] in writing.",
+          "expectedIntent": "request written confirmation",
+          "next": [
+            "n7"
+          ]
+        },
+        {
+          "id": "n6",
+          "speaker": "user",
+          "text": "Thank you. Please let us know once it is confirmed.",
+          "expectedIntent": "request confirmation",
+          "next": [
+            "n7"
+          ]
+        },
+        {
+          "id": "n7",
+          "speaker": "partner",
+          "text": "The request is recorded; we will update you shortly.",
+          "next": [
+            "n8"
+          ]
+        },
+        {
+          "id": "n8",
+          "speaker": "user",
+          "text": "Thank you for your assistance.",
+          "expectedIntent": "thanks",
+          "next": []
+        }
+      ],
+      "hints": [
+        "先礼貌说明要处理的事项。",
+        "用 [BOOKING_ID] 或订单号让对方可以定位记录。",
+        "明确要求确认状态或后续步骤。"
+      ],
+      "vocabulary": [
+        {
+          "term": "reservation",
+          "meaning": "预订（酒店）"
+        },
+        {
+          "term": "itinerary",
+          "meaning": "行程（航班）"
+        },
+        {
+          "term": "confirm",
+          "meaning": "确认"
+        }
+      ],
+      "phrases": [
+        {
+          "text": "Could you please check the booking and provide the current itinerary for [BOOKING_ID]?",
+          "meaning": "请协助核实该订单。"
+        },
+        {
+          "text": "Please let us know if any action is required.",
+          "meaning": "如需我们采取任何操作，请告知。"
+        }
+      ],
+      "commonErrors": [
+        "避免使用 reply me，应使用 reply to us 或 let us know。",
+        "不要承诺退款或补偿一定会成功。"
+      ],
+      "reference": {
+        "subject": "Connection and Missed Flight — [BOOKING_ID]",
+        "body": "Dear airline support team,\n\nCould you please check the booking and provide the current itinerary for [BOOKING_ID]? The traveller reference is [TICKET_NUMBER]. Please let us know if any action or additional information is required.\n\nThank you for your assistance.\nBest regards,\nOperations Team"
+      },
+      "scoring": {
+        "politenessTerms": [
+          "please",
+          "could you",
+          "would you",
+          "thank you"
+        ],
+        "minWords": 24,
+        "maxChatWords": 80
+      }
+    },
+    {
+      "id": "flight-email-12",
+      "version": "1.0.0",
+      "titleZh": "出票时限和订单异常",
+      "titleEn": "Ticketing Time Limit and Booking Status",
+      "category": "flight",
+      "channel": "email",
+      "difficulty": "advanced",
+      "duration": 8,
+      "context": "你是中文运营人员，需与航空公司核实「出票时限和订单异常」，避免作出未经确认的承诺。",
+      "userRole": "Operations coordinator",
+      "partnerRole": "airline support team",
+      "partnerMessage": "Hello, we need more details before we can assist with ticketing time limit and booking status.",
+      "translation": "您好，我们需要更多信息才能协助处理出票时限和订单异常。",
+      "requiredObjectives": [
+        {
+          "id": "request",
+          "label": "礼貌说明请求",
+          "keywords": [
+            "could you",
+            "please",
+            "would you"
+          ],
+          "required": true
+        },
+        {
+          "id": "identify",
+          "label": "提供订单识别信息",
+          "keywords": [
+            "booking",
+            "reference",
+            "[booking_id]",
+            "[ticket_number]"
+          ],
+          "required": true
+        },
+        {
+          "id": "confirm",
+          "label": "请求书面确认或状态",
+          "keywords": [
+            "confirm",
+            "status",
+            "let us know"
+          ],
+          "required": true
+        }
+      ],
+      "optionalObjectives": [
+        {
+          "id": "thanks",
+          "label": "表达感谢",
+          "keywords": [
+            "thank",
+            "appreciate"
+          ],
+          "required": false
+        }
+      ],
+      "requiredEntities": [
+        "bookingId"
+      ],
+      "keywords": {
+        "confirm": [
+          "confirm",
+          "verify",
+          "check"
+        ],
+        "request": [
+          "could you",
+          "would you",
+          "please"
+        ],
+        "urgent": [
+          "urgent",
+          "as soon as possible"
+        ]
+      },
+      "nodes": [
+        {
+          "id": "n1",
+          "speaker": "partner",
+          "text": "Please share the booking reference for ticketing time limit and booking status.",
+          "next": [
+            "n2",
+            "n3"
+          ]
+        },
+        {
+          "id": "n2",
+          "speaker": "user",
+          "text": "Could you please check the booking and provide the current itinerary for [BOOKING_ID]?",
+          "expectedIntent": "request confirmation",
+          "next": [
+            "n4"
+          ]
+        },
+        {
+          "id": "n3",
+          "speaker": "user",
+          "text": "Could you clarify which reference you require?",
+          "expectedIntent": "request clarification",
+          "next": [
+            "n4"
+          ]
+        },
+        {
+          "id": "n4",
+          "speaker": "partner",
+          "text": "We are checking the record now. Is there anything else to confirm?",
+          "next": [
+            "n5",
+            "n6"
+          ]
+        },
+        {
+          "id": "n5",
+          "speaker": "user",
+          "text": "Please also confirm [TICKET_NUMBER] in writing.",
+          "expectedIntent": "request written confirmation",
+          "next": [
+            "n7"
+          ]
+        },
+        {
+          "id": "n6",
+          "speaker": "user",
+          "text": "Thank you. Please let us know once it is confirmed.",
+          "expectedIntent": "request confirmation",
+          "next": [
+            "n7"
+          ]
+        },
+        {
+          "id": "n7",
+          "speaker": "partner",
+          "text": "The request is recorded; we will update you shortly.",
+          "next": [
+            "n8"
+          ]
+        },
+        {
+          "id": "n8",
+          "speaker": "user",
+          "text": "Thank you for your assistance.",
+          "expectedIntent": "thanks",
+          "next": []
+        }
+      ],
+      "hints": [
+        "先礼貌说明要处理的事项。",
+        "用 [BOOKING_ID] 或订单号让对方可以定位记录。",
+        "明确要求确认状态或后续步骤。"
+      ],
+      "vocabulary": [
+        {
+          "term": "reservation",
+          "meaning": "预订（酒店）"
+        },
+        {
+          "term": "itinerary",
+          "meaning": "行程（航班）"
+        },
+        {
+          "term": "confirm",
+          "meaning": "确认"
+        }
+      ],
+      "phrases": [
+        {
+          "text": "Could you please check the booking and provide the current itinerary for [BOOKING_ID]?",
+          "meaning": "请协助核实该订单。"
+        },
+        {
+          "text": "Please let us know if any action is required.",
+          "meaning": "如需我们采取任何操作，请告知。"
+        }
+      ],
+      "commonErrors": [
+        "避免使用 reply me，应使用 reply to us 或 let us know。",
+        "不要承诺退款或补偿一定会成功。"
+      ],
+      "reference": {
+        "subject": "Ticketing Time Limit and Booking Status — [BOOKING_ID]",
+        "body": "Dear airline support team,\n\nCould you please check the booking and provide the current itinerary for [BOOKING_ID]? The traveller reference is [TICKET_NUMBER]. Please let us know if any action or additional information is required.\n\nThank you for your assistance.\nBest regards,\nOperations Team"
+      },
+      "scoring": {
+        "politenessTerms": [
+          "please",
+          "could you",
+          "would you",
+          "thank you"
+        ],
+        "minWords": 24,
+        "maxChatWords": 80
+      }
+    }
+  ]
+}
