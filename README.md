@@ -39,10 +39,10 @@ npm run validate:content
 
 ## 部署 GitHub Pages
 
-1. 创建公开仓库 `opslite-pwa`，推送 `main`。
+1. 创建公开仓库 `opslingo-lite`，推送 `main`。
 2. 在仓库 **Settings → Pages** 选择 **GitHub Actions** 作为发布源。
 3. `deploy-pages.yml` 会以仓库子路径构建 Vite；Hash 路由不需要服务器回退。
-4. 等待工作流完成，访问 `https://USERNAME.github.io/opslite-pwa/`。
+4. 等待工作流完成，访问 `https://USERNAME.github.io/opslingo-lite/`。
 
 ## iPhone 15 安装与离线
 

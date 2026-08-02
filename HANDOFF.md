@@ -26,7 +26,7 @@
 
 ## 名称、图标、发布
 
-改名时同步 `index.html`、`vite.config.ts` manifest 与文档。图标源在 `public/icons/`。推送 `main` 后选择 GitHub Actions Pages；Vite 在 Actions 中自动使用 `/opslite-pwa/` 基路径。
+改名时同步 `index.html`、`vite.config.ts` manifest 与文档。图标源在 `public/icons/`。推送 `main` 后选择 GitHub Actions Pages；Vite 在 Actions 中自动使用 `/opslingo-lite/` 基路径。
 
 ## 下一阶段建议
 
