@@ -1,5 +1,10 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const localChrome =
+  process.platform === 'darwin'
+    ? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+    : undefined;
+
 export default defineConfig({
   testDir: './e2e',
   timeout: 30000,
@@ -15,9 +20,7 @@ export default defineConfig({
       name: 'chromium',
       use: {
         ...devices['Desktop Chrome'],
-        launchOptions: {
-          executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
-        }
+        ...(localChrome ? { launchOptions: { executablePath: localChrome } } : {})
       }
     },
     { name: 'webkit', use: { ...devices['Desktop Safari'] } },
