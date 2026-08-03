@@ -453,6 +453,132 @@ blockquote {
   padding: 4px 7px;
   font-size: 0.8rem;
 }
+.scenario-vocabulary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.scenario-vocabulary button {
+  min-height: 38px;
+  background: #eef5ff;
+  color: #255fae;
+}
+.library-word {
+  width: 100%;
+  align-items: center;
+  min-height: 90px;
+  text-align: left;
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
+}
+.library-word small {
+  display: block;
+  margin-top: 4px;
+}
+.library-word p {
+  margin: 5px 0 0;
+}
+.speaker {
+  font-size: 1.25rem;
+}
+.sheet-backdrop {
+  position: fixed;
+  z-index: 20;
+  inset: 0;
+  display: grid;
+  align-items: end;
+  background: #10182788;
+}
+.word-sheet {
+  width: min(720px, 100%);
+  max-height: min(84dvh, 760px);
+  overflow: auto;
+  margin: auto;
+  padding: 10px 20px calc(24px + env(safe-area-inset-bottom));
+  border-radius: 24px 24px 0 0;
+  background: #fff;
+  color: #182235;
+}
+.sheet-handle {
+  width: 42px;
+  height: 5px;
+  margin: 0 auto 10px;
+  border-radius: 99px;
+  background: #c8d0db;
+}
+.word-sheet h2 {
+  font-size: clamp(2rem, 12vw, 3.1rem);
+  margin: 8px 0;
+}
+.phonetic {
+  justify-content: flex-start;
+  color: #536887;
+}
+.phonetic button {
+  margin-left: auto;
+  min-width: 44px;
+  background: #eaf3ff;
+}
+.spelling {
+  color: #5d7598;
+  letter-spacing: 0.04em;
+}
+.example-card {
+  display: grid;
+  gap: 4px;
+  padding: 14px;
+  border-radius: 16px;
+  background: #f2f6fc;
+}
+.example-card p {
+  margin: 0;
+  font-size: 1.1rem;
+}
+.example-card button {
+  justify-self: start;
+  min-height: 36px;
+  margin-top: 4px;
+  background: transparent;
+  color: #1769e0;
+}
+.pronunciation {
+  display: grid;
+  gap: 8px;
+  padding: 14px 0;
+  border-top: 1px solid #e2e8f1;
+}
+.pronunciation h3,
+.pronunciation p {
+  margin: 0;
+}
+.inline-warning {
+  padding: 8px 10px;
+  border-radius: 10px;
+  color: #765000;
+  background: #fff2ce;
+}
+.assessment-result {
+  display: grid;
+  gap: 8px;
+}
+.assessment-result p {
+  line-height: 1.5;
+}
+.word-feedback {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.word-feedback span {
+  padding: 4px 7px;
+  border-radius: 8px;
+  color: #1d5e3b;
+  background: #e9f7ef;
+}
+.word-feedback .needs-practice {
+  color: #8b3b00;
+  background: #fff0df;
+}
 .empty {
   text-align: center;
   padding: 38px 12px;
@@ -485,6 +611,9 @@ blockquote {
   }
   .scenario-card strong {
     color: #e6ecf8;
+  }
+  .tag {
+    color: #b7d2fb;
   }
   nav {
     background: #182130ed;
@@ -527,6 +656,22 @@ blockquote {
   }
   nav button.active {
     color: #8db9ff;
+  }
+  .word-sheet {
+    background: #1b2534;
+    color: #e6ecf8;
+  }
+  .example-card {
+    background: #243449;
+  }
+  .scenario-vocabulary button,
+  .phonetic button {
+    background: #213c5f;
+    color: #cde1ff;
+  }
+  .inline-warning {
+    color: #ffe1a4;
+    background: #513d10;
   }
 }
 @media (prefers-reduced-motion: reduce) {

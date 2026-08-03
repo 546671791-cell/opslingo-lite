@@ -1,3 +1,6 @@
 public/content/
 dist/
 coverage/
+android/
+azure-function/node_modules/
+azure-function/dist/

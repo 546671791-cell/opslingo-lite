@@ -121,6 +121,49 @@ export interface VocabularyItem {
   createdAt: string;
 }
 
+export type VocabularyLevel = '基础' | '进阶' | '商务';
+
+export interface VocabularyEntry {
+  id: string;
+  term: string;
+  phonetic: string;
+  meaning: string;
+  category: string;
+  level: VocabularyLevel;
+  example: string;
+  exampleMeaning: string;
+  tips: string[];
+}
+
+export interface VocabularyPack {
+  id: string;
+  version: string;
+  releasedAt: string;
+  entries: VocabularyEntry[];
+}
+
+export interface VocabularyCatalog {
+  catalogVersion: number;
+  releasedAt: string;
+  packs: { id: string; version: string; path: string; entryCount: number }[];
+}
+
+export interface PronunciationWord {
+  word: string;
+  accuracy: number;
+  errorType?: string;
+}
+
+export interface PronunciationAssessment {
+  recognizedText: string;
+  accuracy: number;
+  fluency: number;
+  completeness: number;
+  pronunciation: number;
+  prosody?: number;
+  words: PronunciationWord[];
+}
+
 export interface Draft {
   id: string;
   scenarioId: string;

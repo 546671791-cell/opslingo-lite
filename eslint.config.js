@@ -5,7 +5,16 @@ import tseslint from 'typescript-eslint';
 import prettier from 'eslint-config-prettier';
 
 export default [
-  { ignores: ['dist/**', 'coverage/**', 'playwright-report/**'] },
+  {
+    ignores: [
+      'dist/**',
+      'coverage/**',
+      'playwright-report/**',
+      'android/**',
+      'azure-function/dist/**',
+      'azure-function/node_modules/**'
+    ]
+  },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {

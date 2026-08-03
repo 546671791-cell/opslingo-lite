@@ -16,15 +16,20 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
+    "android:sync": "npm run build && npx cap sync android",
+    "android:debug": "npm run android:sync && cd android && ./gradlew assembleDebug",
     "quality": "npm run format:check && npm run lint && npm run typecheck && npm run test:coverage && npm run build && npm run test:e2e"
   },
   "dependencies": {
+    "@capacitor/android": "^7.4.3",
+    "@capacitor/core": "^7.4.3",
     "idb": "^8.0.3",
     "preact": "^10.26.4",
     "zod": "^3.24.2"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.10.2",
+    "@capacitor/cli": "^7.4.3",
     "@eslint/js": "^9.21.0",
     "@playwright/test": "^1.51.1",
     "@preact/preset-vite": "^2.10.1",

@@ -1,6 +1,7 @@
 import { render } from 'preact';
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import { registerSW } from 'virtual:pwa-register';
+import { PronunciationPractice } from './PronunciationPractice';
 import {
   ConversationEngine,
   effectiveSeconds,
@@ -20,6 +21,8 @@ import {
   id,
   importData,
   loadLocalContent,
+  loadVocabularyContent,
+  refreshVocabularyContent,
   rollbackPack,
   saveDraft,
   saveSession,
@@ -27,7 +30,14 @@ import {
   sessions,
   vocabulary
 } from './storage';
-import type { CatalogPack, PracticeSession, Scenario, VocabularyItem } from './types';
+import { speakEnglish } from './pronunciation';
+import type {
+  CatalogPack,
+  PracticeSession,
+  Scenario,
+  VocabularyEntry,
+  VocabularyItem
+} from './types';
 import './styles.css';
 
 type Page = 'home' | 'scenes' | 'talk' | 'progress' | 'words' | 'detail' | 'train' | 'settings';
@@ -72,6 +82,7 @@ function App() {
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
   const [allSessions, setAllSessions] = useState<PracticeSession[]>([]);
   const [words, setWords] = useState<VocabularyItem[]>([]);
+  const [library, setLibrary] = useState<VocabularyEntry[]>([]);
   const [notice, setNotice] = useState('');
   const [offline, setOffline] = useState(!navigator.onLine);
   const [availableUpdate, setAvailableUpdate] = useState<(() => void) | null>(null);
@@ -79,11 +90,16 @@ function App() {
     setAllSessions(await sessions());
     setWords(await vocabulary());
   };
+  const reloadVocabulary = async () => setLibrary(await loadVocabularyContent());
   useEffect(() => {
     loadLocalContent()
       .then(setScenarios)
       .then(reload)
       .catch((e: Error) => setNotice(e.message));
+    reloadVocabulary().catch((e: Error) => setNotice(e.message));
+    refreshVocabularyContent()
+      .then(({ entries }) => setLibrary(entries))
+      .catch(() => undefined);
     const onHash = () => setLocation(route());
     const online = () => setOffline(!navigator.onLine);
     addEventListener('hashchange', onHash);
@@ -113,8 +129,10 @@ function App() {
     scenarios,
     allSessions,
     words,
+    library,
     statuses,
     reload,
+    reloadVocabulary,
     notice: (message: string) => setNotice(message)
   };
   return (
@@ -186,7 +204,7 @@ function Nav({ page }: { page: Page }) {
     </nav>
   );
 }
-function Home({ scenarios, allSessions, statuses, notice }: any) {
+function Home({ scenarios, allSessions, statuses, library, notice, reloadVocabulary }: any) {
   const completed = overallCompletion([...statuses.values()]);
   const hotel = scenarios.filter((s: Scenario) => s.category === 'hotel');
   const flight = scenarios.filter((s: Scenario) => s.category === 'flight');
@@ -246,6 +264,26 @@ function Home({ scenarios, allSessions, statuses, notice }: any) {
           }}
         >
           检查场景更新
+        </button>
+      </div>
+      <div class="card line">
+        <span>日常词汇包 · {library.length} 词句</span>
+        <button
+          onClick={async () => {
+            try {
+              const refreshed = await refreshVocabularyContent();
+              await reloadVocabulary();
+              notice(
+                refreshed.updatedEntries
+                  ? `已更新 ${refreshed.updatedEntries} 条词汇，学习记录已保留。`
+                  : '词汇已是最新。'
+              );
+            } catch (e) {
+              notice((e as Error).message);
+            }
+          }}
+        >
+          刷新词汇
         </button>
       </div>
       <InstallTip />
@@ -398,7 +436,22 @@ function Detail({ scenario, status }: { scenario: Scenario; status: any }) {
           ))}
         </ul>
         <h3>核心词汇</h3>
-        <p>{scenario.vocabulary.map((v) => `${v.term}（${v.meaning}）`).join(' · ')}</p>
+        <div class="scenario-vocabulary">
+          {scenario.vocabulary.map((v) => (
+            <button
+              aria-label={`朗读 ${v.term}`}
+              onClick={() => {
+                try {
+                  speakEnglish(v.term);
+                } catch {
+                  // System voices are optional; the visual vocabulary remains usable.
+                }
+              }}
+            >
+              🔊 {v.term}（{v.meaning}）
+            </button>
+          ))}
+        </div>
         <button class="primary" onClick={() => go('train', scenario.id)}>
           开始训练
         </button>
@@ -739,13 +792,17 @@ function Progress({ scenarios, allSessions, statuses }: any) {
     </section>
   );
 }
-function Words({ words, reload, notice }: any) {
+function Words({ words, library, reload, reloadVocabulary, notice }: any) {
   const [query, setQuery] = useState('');
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState('');
   const [meaning, setMeaning] = useState('');
+  const [selected, setSelected] = useState<VocabularyEntry | null>(null);
   const filtered = words.filter((w: VocabularyItem) =>
     `${w.text} ${w.meaning} ${w.tags.join(' ')}`.toLowerCase().includes(query.toLowerCase())
+  );
+  const libraryFiltered = library.filter((entry: VocabularyEntry) =>
+    `${entry.term} ${entry.meaning} ${entry.category}`.toLowerCase().includes(query.toLowerCase())
   );
   const create = async () => {
     if (!text.trim() || !meaning.trim()) return;
@@ -775,6 +832,23 @@ function Words({ words, reload, notice }: any) {
       />
       <div class="actions">
         <button onClick={() => setEditing(!editing)}>+ 添加词句</button>
+        <button
+          onClick={async () => {
+            try {
+              const refreshed = await refreshVocabularyContent();
+              await reloadVocabulary();
+              notice(
+                refreshed.updatedEntries
+                  ? `已更新 ${refreshed.updatedEntries} 条词汇。`
+                  : '词汇已是最新。'
+              );
+            } catch (e) {
+              notice((e as Error).message);
+            }
+          }}
+        >
+          ↻ 刷新词汇
+        </button>
       </div>
       {editing && (
         <div class="card">
@@ -793,6 +867,26 @@ function Words({ words, reload, notice }: any) {
           </button>
         </div>
       )}
+      <h2>日常词汇</h2>
+      <p class="muted">点开词卡可听朗读、查看音标与拼读，并进行录音评分。</p>
+      <div class="cards">
+        {libraryFiltered.map((entry: VocabularyEntry) => (
+          <button class="card word library-word" onClick={() => setSelected(entry)}>
+            <span class="speaker" aria-hidden="true">
+              🔊
+            </span>
+            <span>
+              <strong>{entry.term}</strong>
+              <small>
+                {entry.phonetic} · {entry.level}
+              </small>
+              <p>{entry.meaning}</p>
+            </span>
+            <span class="tag">{entry.category}</span>
+          </button>
+        ))}
+      </div>
+      <h2>我的词句</h2>
       <div class="cards">
         {filtered.map((item: VocabularyItem) => (
           <article class="card word">
@@ -850,10 +944,99 @@ function Words({ words, reload, notice }: any) {
           </article>
         ))}
       </div>
-      {!filtered.length && (
+      {!libraryFiltered.length && !filtered.length && (
         <div class="empty">暂无词句。可在训练结果中将有用表达手动添加到这里。</div>
       )}
+      {selected && (
+        <WordSheet
+          entry={selected}
+          onClose={() => setSelected(null)}
+          onAdd={async () => {
+            await saveVocabulary({
+              id: `library-${selected.id}`,
+              text: selected.term,
+              meaning: selected.meaning,
+              tags: [selected.category, selected.level],
+              favorite: true,
+              mastered: false,
+              nextReview: localDate(new Date()),
+              createdAt: new Date().toISOString()
+            });
+            await reload();
+            notice('已加入我的词句。');
+          }}
+          notice={notice}
+        />
+      )}
     </section>
+  );
+}
+function WordSheet({
+  entry,
+  onClose,
+  onAdd,
+  notice
+}: {
+  entry: VocabularyEntry;
+  onClose: () => void;
+  onAdd: () => Promise<void>;
+  notice: (value: string) => void;
+}) {
+  const spell = entry.term
+    .replace(/[^a-z]/gi, '')
+    .toUpperCase()
+    .split('')
+    .join(' · ');
+  const play = (text: string) => {
+    try {
+      speakEnglish(text);
+    } catch (error) {
+      notice((error as Error).message);
+    }
+  };
+  return (
+    <div class="sheet-backdrop" role="presentation" onClick={onClose}>
+      <article
+        class="word-sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-label={`${entry.term} 词汇详情`}
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div class="sheet-handle" />
+        <div class="line">
+          <h2>{entry.term}</h2>
+          <button aria-label="关闭词汇详情" class="icon-button" onClick={onClose}>
+            ×
+          </button>
+        </div>
+        <div class="line phonetic">
+          <span>{entry.phonetic}</span>
+          <strong>{entry.meaning}</strong>
+          <button aria-label={`朗读 ${entry.term}`} onClick={() => play(entry.term)}>
+            🔊
+          </button>
+        </div>
+        <p class="spelling">拼读：{spell}</p>
+        <div class="example-card">
+          <p>{entry.example}</p>
+          <small>{entry.exampleMeaning}</small>
+          <button aria-label="朗读例句" onClick={() => play(entry.example)}>
+            🔊 朗读例句
+          </button>
+        </div>
+        <h3>用法小贴士</h3>
+        <ul>
+          {entry.tips.map((tip) => (
+            <li>{tip}</li>
+          ))}
+        </ul>
+        <PronunciationPractice entry={entry} />
+        <button class="primary wide" onClick={onAdd}>
+          加入我的词句
+        </button>
+      </article>
+    </div>
   );
 }
 function Settings({

@@ -1,0 +1,21 @@
+{
+  "name": "opslingo-speech-proxy",
+  "version": "1.0.0",
+  "private": true,
+  "main": "dist/src/functions/*.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "func start",
+    "test": "npm run build"
+  },
+  "dependencies": {
+    "@azure/functions": "^4.16.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "typescript": "^5.7.3"
+  },
+  "engines": {
+    "node": ">=20 <23"
+  }
+}

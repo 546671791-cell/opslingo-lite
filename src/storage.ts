@@ -6,6 +6,8 @@ import type {
   Draft,
   PracticeSession,
   Scenario,
+  VocabularyCatalog,
+  VocabularyEntry,
   VocabularyItem
 } from './types';
 
@@ -23,8 +25,17 @@ interface OpsDb extends DBSchema {
     value: { key: string; sessionId: string; role: string; text: string };
   };
   progress: { key: string; value: { key: string; value: unknown } };
+  vocabularyPacks: { key: string; value: VocabularyPackRecord };
 }
-export const dbPromise = openDB<OpsDb>('opslite-pwa', 3, {
+type VocabularyPackRecord = {
+  key: string;
+  id: string;
+  version: string;
+  releasedAt: string;
+  entries: VocabularyEntry[];
+};
+
+export const dbPromise = openDB<OpsDb>('opslite-pwa', 4, {
   upgrade(db, oldVersion) {
     if (oldVersion < 1) {
       const sessions = db.createObjectStore('practiceSessions', { keyPath: 'id' });
@@ -51,6 +62,8 @@ export const dbPromise = openDB<OpsDb>('opslite-pwa', 3, {
       db.createObjectStore('scenarios', { keyPath: 'id' });
       db.createObjectStore('contentPacks', { keyPath: 'key' });
     }
+    if (oldVersion < 4 && !db.objectStoreNames.contains('vocabularyPacks'))
+      db.createObjectStore('vocabularyPacks', { keyPath: 'key' });
   }
 });
 
@@ -69,6 +82,79 @@ export async function loadLocalContent() {
     await installPack(pack, entry.sha256);
   }
   return db.getAll('scenarios');
+}
+
+function vocabularyPackFrom(input: unknown, expected?: { id: string; version: string }) {
+  const pack = input as VocabularyPackRecord;
+  if (
+    !pack ||
+    typeof pack.id !== 'string' ||
+    typeof pack.version !== 'string' ||
+    !Array.isArray(pack.entries) ||
+    pack.entries.some(
+      (entry) =>
+        !entry ||
+        typeof entry.id !== 'string' ||
+        typeof entry.term !== 'string' ||
+        typeof entry.phonetic !== 'string' ||
+        typeof entry.meaning !== 'string' ||
+        typeof entry.example !== 'string' ||
+        !Array.isArray(entry.tips)
+    ) ||
+    new Set(pack.entries.map((entry) => entry.id)).size !== pack.entries.length
+  )
+    throw new Error('词汇包格式无效，已保留本机词库。');
+  if (expected && (pack.id !== expected.id || pack.version !== expected.version))
+    throw new Error('词汇包身份或版本不匹配，已保留本机词库。');
+  return pack;
+}
+
+async function fetchVocabularyCatalog() {
+  const response = await fetch(`./vocabulary/catalog.json?t=${Date.now()}`, { cache: 'no-store' });
+  if (!response.ok) throw new Error('无法获取词汇目录。');
+  const catalog = (await response.json()) as VocabularyCatalog;
+  if (!Array.isArray(catalog.packs)) throw new Error('词汇目录格式无效。');
+  return catalog;
+}
+
+async function fetchVocabularyPack(entry: VocabularyCatalog['packs'][number]) {
+  const response = await fetch(`./vocabulary/${entry.path.replace('./', '')}?v=${entry.version}`, {
+    cache: 'no-store'
+  });
+  if (!response.ok) throw new Error(`无法下载词汇包：${entry.id}`);
+  return vocabularyPackFrom(await response.json(), entry);
+}
+
+export async function loadVocabularyContent() {
+  const db = await dbPromise;
+  const local = await db.getAll('vocabularyPacks');
+  if (local.length)
+    return local
+      .flatMap((pack) => pack.entries)
+      .sort((a, b) => a.category.localeCompare(b.category) || a.term.localeCompare(b.term));
+  const catalog = await fetchVocabularyCatalog();
+  for (const entry of catalog.packs) {
+    const pack = await fetchVocabularyPack(entry);
+    await db.put('vocabularyPacks', { ...pack, key: pack.id });
+  }
+  return (await db.getAll('vocabularyPacks'))
+    .flatMap((pack) => pack.entries)
+    .sort((a, b) => a.category.localeCompare(b.category) || a.term.localeCompare(b.term));
+}
+
+export async function refreshVocabularyContent() {
+  if (!navigator.onLine) throw new Error('当前离线，无法刷新词汇。');
+  const db = await dbPromise;
+  const catalog = await fetchVocabularyCatalog();
+  let updatedEntries = 0;
+  for (const entry of catalog.packs) {
+    const local = await db.get('vocabularyPacks', entry.id);
+    if (local?.version === entry.version) continue;
+    const pack = await fetchVocabularyPack(entry);
+    await db.put('vocabularyPacks', { ...pack, key: pack.id });
+    updatedEntries += pack.entries.length;
+  }
+  return { updatedEntries, entries: await loadVocabularyContent() };
 }
 export async function sha256(text: string) {
   const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));

@@ -17,6 +17,8 @@ jobs:
         with: { node-version-file: .nvmrc, cache: npm }
       - run: npm ci
       - run: npm run build
+        env:
+          VITE_SPEECH_API_URL: ${{ vars.VITE_SPEECH_API_URL }}
       - uses: actions/upload-pages-artifact@v3
         with: { path: dist }
   deploy:
