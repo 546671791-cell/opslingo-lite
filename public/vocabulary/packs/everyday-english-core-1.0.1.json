@@ -1,7 +1,7 @@
 {
   "id": "everyday-english-core",
-  "version": "1.0.0",
-  "releasedAt": "2026-08-03T00:00:00.000Z",
+  "version": "1.0.1",
+  "releasedAt": "2026-08-04T00:00:00.000Z",
   "entries": [
     {
       "id": "time-schedule",
@@ -519,6 +519,105 @@
       "example": "When will the delivery arrive?",
       "exampleMeaning": "配送什么时候到？",
       "tips": ["delivery 可指外卖或快递。", "arrive 不直接接地点时用 at/in。"]
+    },
+    {
+      "id": "daily-conversation",
+      "term": "conversation",
+      "phonetic": "/ˌkɑːnvərˈseɪʃn/",
+      "meaning": "交谈；对话",
+      "category": "日常生活",
+      "level": "基础",
+      "example": "We had a friendly conversation.",
+      "exampleMeaning": "我们进行了一次友好的交谈。",
+      "tips": ["have a conversation 表示进行交谈。", "conversation 比 talk 稍正式。"]
+    },
+    {
+      "id": "daily-understand",
+      "term": "understand",
+      "phonetic": "/ˌʌndərˈstænd/",
+      "meaning": "理解；明白",
+      "category": "日常生活",
+      "level": "基础",
+      "example": "I do not quite understand.",
+      "exampleMeaning": "我不太明白。",
+      "tips": ["quite 可让语气更委婉。", "不明白时可继续请求对方解释。"]
+    },
+    {
+      "id": "daily-repeat",
+      "term": "repeat",
+      "phonetic": "/rɪˈpiːt/",
+      "meaning": "重复；再说一遍",
+      "category": "日常生活",
+      "level": "基础",
+      "example": "Could you repeat that, please?",
+      "exampleMeaning": "请你再说一遍好吗？",
+      "tips": ["用于没听清时的礼貌请求。", "句尾加 please 更友好。"]
+    },
+    {
+      "id": "daily-actually",
+      "term": "actually",
+      "phonetic": "/ˈæktʃuəli/",
+      "meaning": "其实；实际上",
+      "category": "日常生活",
+      "level": "进阶",
+      "example": "Actually, I prefer the blue one.",
+      "exampleMeaning": "其实，我更喜欢蓝色的那个。",
+      "tips": ["可用于礼貌纠正或补充信息。", "不要在每句话中过度使用。"]
+    },
+    {
+      "id": "daily-probably",
+      "term": "probably",
+      "phonetic": "/ˈprɑːbəbli/",
+      "meaning": "很可能；大概",
+      "category": "日常生活",
+      "level": "进阶",
+      "example": "I will probably arrive at six.",
+      "exampleMeaning": "我大概六点到。",
+      "tips": ["表示可能性较高，但并非完全确定。", "常放在实义动词前。"]
+    },
+    {
+      "id": "daily-exactly",
+      "term": "exactly",
+      "phonetic": "/ɪɡˈzæktli/",
+      "meaning": "确切地；正是如此",
+      "category": "日常生活",
+      "level": "进阶",
+      "example": "That is exactly what I mean.",
+      "exampleMeaning": "那正是我的意思。",
+      "tips": ["单独说 Exactly! 可表示完全同意。", "也可用于追问准确细节。"]
+    },
+    {
+      "id": "daily-instead",
+      "term": "instead",
+      "phonetic": "/ɪnˈsted/",
+      "meaning": "代替；反而",
+      "category": "日常生活",
+      "level": "进阶",
+      "example": "Could we meet tomorrow instead?",
+      "exampleMeaning": "我们可以改成明天见吗？",
+      "tips": ["instead 常放句尾表示替代方案。", "instead of 后接名词或动名词。"]
+    },
+    {
+      "id": "daily-agree",
+      "term": "agree",
+      "phonetic": "/əˈɡriː/",
+      "meaning": "同意；赞同",
+      "category": "日常生活",
+      "level": "基础",
+      "example": "I agree with you.",
+      "exampleMeaning": "我同意你的看法。",
+      "tips": ["agree with 后接人或观点。", "agree to 常接计划或提议。"]
+    },
+    {
+      "id": "travel-itinerary",
+      "term": "itinerary",
+      "phonetic": "/aɪˈtɪnəreri/",
+      "meaning": "行程；旅行计划",
+      "category": "出行",
+      "level": "商务",
+      "example": "Please send me the updated itinerary.",
+      "exampleMeaning": "请把更新后的行程发给我。",
+      "tips": ["itinerary 指包含时间和地点的行程计划。", "重音落在第二个音节。"]
     }
   ]
 }

@@ -53,3 +53,22 @@ test('keeps the header fixed and shows communication tips', async ({ page }) => 
   expect(await header.count()).toBe(1);
   expect(await header.evaluate((element) => getComputedStyle(element).position)).toBe('sticky');
 });
+test('shows update controls, word details and bilingual playable dialogue', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: '⌁ 沟通', exact: true }).click();
+  await expect(page.getByRole('button', { name: '↻ 刷新词汇' })).toBeVisible();
+  await page.getByText('日常交流', { exact: true }).click();
+  await expect(page.getByRole('button', { name: '↻ 检查更新并刷新本主题词汇' })).toBeVisible();
+  await page
+    .getByRole('button', { name: /conversation/ })
+    .first()
+    .click();
+  await expect(page.getByRole('dialog', { name: /conversation 词汇详情/ })).toContainText('拼读：');
+  await page.getByRole('button', { name: '关闭词汇详情' }).click();
+  await page.getByRole('button', { name: '返回' }).click();
+  await page.getByRole('button', { name: '◌ 对话', exact: true }).click();
+  await expect(page.locator('.bubble.partner small')).toBeVisible();
+  await expect(page.locator('.bubble.partner .speak-button')).toBeVisible();
+  await expect(page.locator('.choice-card small').first()).toBeVisible();
+  await expect(page.locator('.choice-card .speak-button').first()).toBeVisible();
+});

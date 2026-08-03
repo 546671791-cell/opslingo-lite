@@ -313,7 +313,10 @@ export class ConversationEngine {
       needsClarification,
       nextPartnerMessage: needsClarification
         ? 'Could you please clarify the booking reference or the action you need?'
-        : 'Thank you. We are checking this and will send written confirmation shortly.'
+        : 'Thank you. We are checking this and will send written confirmation shortly.',
+      nextPartnerMeaning: needsClarification
+        ? '请说明订单编号或你需要办理的事项好吗？'
+        : '谢谢。我们正在核查，并会尽快发送书面确认。'
     };
   }
   get reference() {

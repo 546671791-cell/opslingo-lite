@@ -1,12 +1,12 @@
 {
   "catalogVersion": 1,
-  "releasedAt": "2026-08-03T00:00:00.000Z",
+  "releasedAt": "2026-08-04T00:00:00.000Z",
   "packs": [
     {
       "id": "everyday-english-core",
-      "version": "1.0.0",
-      "path": "./packs/everyday-english-core-1.0.0.json",
-      "entryCount": 47
+      "version": "1.0.1",
+      "path": "./packs/everyday-english-core-1.0.1.json",
+      "entryCount": 56
     }
   ]
 }

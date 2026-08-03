@@ -1,3 +1,6 @@
+import { App as CapacitorApp } from '@capacitor/app';
+import { SpeechRecognition } from '@capacitor-community/speech-recognition';
+import { Capacitor } from '@capacitor/core';
 import { render } from 'preact';
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import { registerSW } from 'virtual:pwa-register';
@@ -31,7 +34,7 @@ import {
   sessions,
   vocabulary
 } from './storage';
-import { speakEnglish } from './pronunciation';
+import { speakEnglish, stopEnglish } from './pronunciation';
 import type {
   CatalogPack,
   PracticeSession,
@@ -85,6 +88,12 @@ const goBack = (fallback: Page) => {
     return;
   }
   go(fallback);
+};
+const backFallback = () => {
+  const [page, value] = route();
+  if (page === 'detail' || page === 'train') return 'scenes';
+  if (page === 'words' && value) return 'words';
+  return 'home';
 };
 const route = (): [Page, string?] => {
   const [, page = 'home', value] = location.hash.split('/');
@@ -172,6 +181,15 @@ function App() {
     addEventListener('touchend', finishEdgeSwipe, { passive: true });
     addEventListener('online', online);
     addEventListener('offline', online);
+    let nativeBackHandle: { remove: () => Promise<void> } | undefined;
+    if (Capacitor.isNativePlatform()) {
+      CapacitorApp.addListener('backButton', () => {
+        const [activePage] = route();
+        if (activePage !== 'home') goBack(backFallback());
+      }).then((handle) => {
+        nativeBackHandle = handle;
+      });
+    }
     const update = registerSW({
       onNeedRefresh() {
         setAvailableUpdate(() => update);
@@ -185,6 +203,7 @@ function App() {
       removeEventListener('touchend', finishEdgeSwipe);
       removeEventListener('online', online);
       removeEventListener('offline', online);
+      nativeBackHandle?.remove();
     };
   }, []);
   const [page, value] = location;
@@ -232,10 +251,13 @@ function App() {
         <Detail
           scenario={selected}
           status={statuses.get(selected.id) ?? 'notStarted'}
+          library={library}
           notify={setNotice}
         />
       )}
-      {page === 'train' && selected && <Training scenario={selected} onSaved={reload} />}
+      {page === 'train' && selected && (
+        <Training scenario={selected} onSaved={reload} notify={setNotice} />
+      )}
       {page === 'talk' && <Talk {...shared} />}
       {page === 'progress' && <Progress {...shared} />}
       {page === 'words' && <Words {...shared} lessonId={value} />}
@@ -490,13 +512,16 @@ function ScenarioCard({ scenario, status }: { scenario: Scenario; status: any })
 function Detail({
   scenario,
   status,
+  library,
   notify
 }: {
   scenario: Scenario;
   status: any;
+  library: VocabularyEntry[];
   notify: (message: string) => void;
 }) {
   const [translation, setTranslation] = useState(false);
+  const [selectedWord, setSelectedWord] = useState<VocabularyEntry | null>(null);
   return (
     <section>
       <Header title="场景详情" back fallback="scenes" />
@@ -530,32 +555,73 @@ function Detail({
         </ul>
         <h3>核心词汇</h3>
         <div class="scenario-vocabulary">
-          {scenario.vocabulary.map((v) => (
-            <SpeakButton
-              text={v.term}
-              label={v.term}
-              display={`🔊 ${v.term}（${v.meaning}）`}
-              notify={notify}
-            />
-          ))}
+          {scenario.vocabulary.map((v) => {
+            const entry = library.find(
+              (item) => item.term.toLocaleLowerCase() === v.term.toLocaleLowerCase()
+            );
+            return (
+              <article class="scenario-word">
+                <button class="scenario-word-main" onClick={() => entry && setSelectedWord(entry)}>
+                  <strong>{v.term}</strong>
+                  <span>{v.meaning}</span>
+                  <small>{entry?.phonetic ?? '点击扬声器听发音'}</small>
+                </button>
+                <SpeakButton text={v.term} label={v.term} compact notify={notify} />
+              </article>
+            );
+          })}
+        </div>
+        <div class="culture-tips scenario-tip">
+          <strong>💡 沟通小贴士</strong>
+          <p>{scenario.hints[0] ?? '先说明来意，再给出关键信息，最后确认下一步。'}</p>
+          <small>点单词卡可查看音标、逐字母拼读、例句和发音练习。</small>
         </div>
         <button class="primary" onClick={() => go('train', scenario.id)}>
           开始训练
         </button>
       </article>
+      {selectedWord && (
+        <WordSheet
+          entry={selectedWord}
+          onClose={() => setSelectedWord(null)}
+          onAdd={async () => {
+            await saveVocabulary({
+              id: `library-${selectedWord.id}`,
+              text: selectedWord.term,
+              meaning: selectedWord.meaning,
+              tags: [selectedWord.category, selectedWord.level],
+              favorite: true,
+              mastered: false,
+              nextReview: localDate(new Date()),
+              createdAt: new Date().toISOString()
+            });
+            notify('已加入我的词句。');
+          }}
+          notice={notify}
+        />
+      )}
     </section>
   );
 }
-function Training({ scenario, onSaved }: { scenario: Scenario; onSaved: () => Promise<void> }) {
+function Training({
+  scenario,
+  onSaved,
+  notify
+}: {
+  scenario: Scenario;
+  onSaved: () => Promise<void>;
+  notify: (message: string) => void;
+}) {
   const [subject, setSubject] = useState(scenario.reference.subject ?? '');
   const [response, setResponse] = useState('');
   const [hint, setHint] = useState(false);
   const [reference, setReference] = useState(false);
   const [result, setResult] = useState<ReturnType<typeof scoreResponse> | null>(null);
   const [started] = useState(new Date().toISOString());
-  const [messages, setMessages] = useState<{ role: string; text: string }[]>([
-    { role: 'partner', text: scenario.partnerMessage }
+  const [messages, setMessages] = useState<{ role: string; text: string; meaning?: string }[]>([
+    { role: 'partner', text: scenario.partnerMessage, meaning: scenario.translation }
   ]);
+  const [listening, setListening] = useState(false);
   useEffect(() => {
     getDraft(scenario.id).then((draft) => {
       if (draft) {
@@ -564,6 +630,13 @@ function Training({ scenario, onSaved }: { scenario: Scenario; onSaved: () => Pr
       }
     });
   }, [scenario.id]);
+  useEffect(
+    () => () => {
+      SpeechRecognition.stop().catch(() => undefined);
+      SpeechRecognition.removeAllListeners().catch(() => undefined);
+    },
+    []
+  );
   const save = async (score: ReturnType<typeof scoreResponse>) => {
     const end = new Date().toISOString();
     await saveSession({
@@ -593,10 +666,47 @@ function Training({ scenario, onSaved }: { scenario: Scenario; onSaved: () => Pr
     setMessages([
       ...messages,
       { role: 'user', text: response },
-      { role: 'partner', text: next.nextPartnerMessage }
+      {
+        role: 'partner',
+        text: next.nextPartnerMessage,
+        meaning: next.nextPartnerMeaning
+      }
     ]);
     setResponse('');
     if (!next.needsClarification) await submit();
+  };
+  const toggleVoiceInput = async () => {
+    if (listening) {
+      await SpeechRecognition.stop();
+      await SpeechRecognition.removeAllListeners();
+      setListening(false);
+      return;
+    }
+    try {
+      const availability = await SpeechRecognition.available();
+      if (!availability.available) throw new Error('此设备没有可用的语音输入服务。');
+      const permission = await SpeechRecognition.requestPermissions();
+      if (permission.speechRecognition !== 'granted')
+        throw new Error('请允许麦克风和语音识别权限。');
+      setListening(true);
+      await SpeechRecognition.addListener('partialResults', ({ matches }) => {
+        if (matches[0]) setResponse(matches[0]);
+      });
+      await SpeechRecognition.addListener('listeningState', ({ status }) => {
+        if (status === 'stopped') setListening(false);
+      });
+      const result = await SpeechRecognition.start({
+        language: 'en-US',
+        maxResults: 3,
+        prompt: '请用英语说出回复',
+        partialResults: true,
+        popup: false
+      });
+      if (result.matches?.[0]) setResponse(result.matches[0]);
+    } catch (error) {
+      setListening(false);
+      notify((error as Error).message);
+    }
   };
   return (
     <section class="training">
@@ -607,7 +717,11 @@ function Training({ scenario, onSaved }: { scenario: Scenario; onSaved: () => Pr
       />
       <div class="task">
         <strong>{scenario.titleZh}</strong>
-        <span>{scenario.partnerMessage}</span>
+        <div class="dialogue-line">
+          <span>{scenario.partnerMessage}</span>
+          <SpeakButton text={scenario.partnerMessage} label="对方消息" compact notify={notify} />
+        </div>
+        <small>{scenario.translation}</small>
       </div>
       {scenario.channel === 'email' ? (
         <>
@@ -633,7 +747,13 @@ function Training({ scenario, onSaved }: { scenario: Scenario; onSaved: () => Pr
         <>
           <div class="chatbox">
             {messages.map((m) => (
-              <p class={`bubble ${m.role}`}>{m.text}</p>
+              <article class={`bubble ${m.role}`}>
+                <div class="dialogue-line">
+                  <span>{m.text}</span>
+                  <SpeakButton text={m.text} label={m.text} compact notify={notify} />
+                </div>
+                {m.meaning && <small>{m.meaning}</small>}
+              </article>
             ))}
           </div>
           <textarea
@@ -642,6 +762,13 @@ function Training({ scenario, onSaved }: { scenario: Scenario; onSaved: () => Pr
             placeholder="输入英文回复…"
             rows={3}
           />
+          <button
+            class={`voice-input ${listening ? 'listening' : ''}`}
+            type="button"
+            onClick={toggleVoiceInput}
+          >
+            {listening ? '■ 停止语音输入' : '🎙 用英语说出回复'}
+          </button>
         </>
       )}
       {hint && <div class="tip">{scenario.hints[0]}</div>}
@@ -705,10 +832,13 @@ function Talk({ scenarios, reload, notice }: any) {
   const [scenarioId, setScenarioId] = useState(chatScenarios[0]?.id ?? '');
   const [mode, setMode] = useState<'guided' | 'free' | 'challenge'>('guided');
   const [input, setInput] = useState('');
-  const [log, setLog] = useState<{ role: 'partner' | 'user'; text: string }[]>([]);
+  const [log, setLog] = useState<{ role: 'partner' | 'user'; text: string; meaning?: string }[]>(
+    []
+  );
   const scenario = chatScenarios.find((s: Scenario) => s.id === scenarioId);
   useEffect(() => {
-    if (scenario) setLog([{ role: 'partner', text: scenario.partnerMessage }]);
+    if (scenario)
+      setLog([{ role: 'partner', text: scenario.partnerMessage, meaning: scenario.translation }]);
   }, [scenarioId]);
   if (!scenario)
     return (
@@ -717,14 +847,18 @@ function Talk({ scenarios, reload, notice }: any) {
         <p>正在加载场景…</p>
       </section>
     );
-  const send = async (text = input) => {
+  const send = async (text = input, meaning?: string) => {
     if (!text.trim()) return;
     const engine = new ConversationEngine(scenario);
     const verdict = engine.reply(text);
     const next = [
       ...log,
-      { role: 'user' as const, text },
-      { role: 'partner' as const, text: verdict.nextPartnerMessage }
+      { role: 'user' as const, text, meaning },
+      {
+        role: 'partner' as const,
+        text: verdict.nextPartnerMessage,
+        meaning: verdict.nextPartnerMeaning
+      }
     ];
     setLog(next);
     setInput('');
@@ -790,13 +924,25 @@ function Talk({ scenarios, reload, notice }: any) {
       </p>
       <div class="chatbox tall">
         {log.map((m) => (
-          <p class={`bubble ${m.role}`}>{m.text}</p>
+          <article class={`bubble ${m.role}`}>
+            <div class="dialogue-line">
+              <span>{m.text}</span>
+              <SpeakButton text={m.text} label={m.text} compact notify={notice} />
+            </div>
+            {m.meaning && mode !== 'challenge' && <small>{m.meaning}</small>}
+          </article>
         ))}
       </div>
       {mode === 'guided' && (
         <div class="choices">
-          {scenario.phrases.map((p: { text: string }) => (
-            <button onClick={() => send(p.text)}>{p.text}</button>
+          {scenario.phrases.map((p: { text: string; meaning: string }) => (
+            <article class="choice-card">
+              <button class="choice-main" onClick={() => send(p.text, p.meaning)}>
+                <strong>{p.text}</strong>
+                <small>{p.meaning}</small>
+              </button>
+              <SpeakButton text={p.text} label={p.text} compact notify={notice} />
+            </article>
           ))}
         </div>
       )}
@@ -898,6 +1044,12 @@ function SpeakButton({
 }) {
   const [playing, setPlaying] = useState(false);
   const play = () => {
+    if (playing) {
+      stopEnglish()
+        .catch((error: Error) => notify(error.message))
+        .finally(() => setPlaying(false));
+      return;
+    }
     setPlaying(true);
     speakEnglish(text)
       .catch((error: Error) => notify(error.message))
@@ -908,10 +1060,9 @@ function SpeakButton({
       class={compact ? 'speak-button compact' : 'speak-button'}
       aria-label={`朗读 ${label}`}
       aria-live="polite"
-      disabled={playing}
       onClick={play}
     >
-      {playing ? '朗读中…' : compact ? '🔊' : (display ?? '🔊 朗读')}
+      {playing ? (compact ? '■' : '■ 停止') : compact ? '🔊' : (display ?? '🔊 朗读')}
     </button>
   );
 }
@@ -1016,6 +1167,15 @@ function Words({ words, library, reload, reloadVocabulary, notice, lessonId }: a
           ]);
           await reload();
           notice('本主题词汇和常用句型已加入我的词句。');
+        }}
+        onRefresh={async () => {
+          const refreshed = await refreshVocabularyContent();
+          await reloadVocabulary();
+          notice(
+            refreshed.updatedEntries
+              ? `已更新 ${refreshed.updatedEntries} 条词汇。`
+              : '词汇已是最新。'
+          );
         }}
         notice={notice}
       >
@@ -1197,6 +1357,7 @@ function LessonDetail({
   onAddEntry,
   onAddPhrase,
   onAddAll,
+  onRefresh,
   notice,
   children
 }: any) {
@@ -1213,6 +1374,9 @@ function LessonDetail({
           </small>
         </div>
       </div>
+      <button class="refresh-lesson" onClick={onRefresh}>
+        ↻ 检查更新并刷新本主题词汇
+      </button>
       <h2>核心词汇</h2>
       <div class="expression-list">
         {entries.map((entry: VocabularyEntry) => (

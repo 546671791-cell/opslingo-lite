@@ -1,3 +1,5 @@
+import { TextToSpeech } from '@capacitor-community/text-to-speech';
+import { Capacitor } from '@capacitor/core';
 import { blobToBase64 } from './audio';
 import type { PronunciationAssessment } from './types';
 
@@ -5,9 +7,42 @@ const configuredEndpoint = import.meta.env.VITE_SPEECH_API_URL?.trim();
 
 export const speechApiConfigured = Boolean(configuredEndpoint);
 
-export function speakEnglish(text: string) {
+const speechTimeout = (text: string) => Math.min(20_000, Math.max(4_000, text.length * 140));
+
+export async function stopEnglish() {
+  if (Capacitor.isNativePlatform()) {
+    await TextToSpeech.stop();
+    return;
+  }
+  if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+}
+
+export async function speakEnglish(text: string) {
+  await stopEnglish();
+  if (Capacitor.isNativePlatform()) {
+    await Promise.race([
+      TextToSpeech.speak({
+        text,
+        lang: 'en-US',
+        rate: 0.82,
+        pitch: 1,
+        volume: 1,
+        queueStrategy: 0
+      }),
+      new Promise<void>((resolve) => window.setTimeout(resolve, speechTimeout(text)))
+    ]);
+    return;
+  }
   if (!('speechSynthesis' in window)) throw new Error('此设备不支持系统朗读。');
   return new Promise<void>((resolve, reject) => {
+    let settled = false;
+    const finish = (error?: Error) => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(watchdog);
+      if (error) reject(error);
+      else resolve();
+    };
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'en-US';
     utterance.rate = 0.82;
@@ -16,15 +51,15 @@ export function speakEnglish(text: string) {
       .getVoices()
       .find((voice) => voice.lang.toLowerCase().startsWith('en'));
     if (englishVoice) utterance.voice = englishVoice;
-    utterance.onend = () => resolve();
+    utterance.onend = () => finish();
     utterance.onerror = (event) => {
-      if (event.error === 'canceled' || event.error === 'interrupted') resolve();
-      else reject(new Error('朗读未能播放。请检查静音开关、媒体音量和系统语音设置。'));
+      if (event.error === 'canceled' || event.error === 'interrupted') finish();
+      else finish(new Error('朗读未能播放。请检查静音开关、媒体音量和系统语音设置。'));
     };
-    window.speechSynthesis.cancel();
     window.speechSynthesis.resume();
     window.speechSynthesis.speak(utterance);
     window.setTimeout(() => window.speechSynthesis.resume(), 180);
+    const watchdog = window.setTimeout(finish, speechTimeout(text));
   });
 }
 

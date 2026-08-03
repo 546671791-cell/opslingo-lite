@@ -376,6 +376,24 @@ blockquote {
   color: white;
   background: #1769e0;
 }
+.dialogue-line {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: start;
+  gap: 8px;
+}
+.bubble small {
+  display: block;
+  margin-top: 6px;
+  color: #66758c;
+}
+.bubble.user small {
+  color: #e0ecff;
+}
+.dialogue-line .speak-button {
+  min-height: 36px;
+  background: #eaf3ff;
+}
 .reference {
   white-space: pre-wrap;
   font-family: inherit;
@@ -406,10 +424,31 @@ blockquote {
   display: grid;
   gap: 6px;
 }
-.choices button {
+.choice-card {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
   background: #fff;
-  text-align: left;
   border: 1px solid #d5dfed;
+  border-radius: 12px;
+}
+.choice-main {
+  display: grid;
+  gap: 4px;
+  padding: 0;
+  text-align: left;
+  background: transparent;
+}
+.choice-main small {
+  color: #64738b;
+}
+.refresh-lesson {
+  width: 100%;
+  min-height: 46px;
+  color: #1769e0;
+  background: #eaf3ff;
 }
 .chart {
   height: 125px;
@@ -460,14 +499,52 @@ blockquote {
   font-size: 0.8rem;
 }
 .scenario-vocabulary {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+  display: grid;
+  gap: 8px;
 }
-.scenario-vocabulary button {
-  min-height: 38px;
+.scenario-word {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 14px;
   background: #eef5ff;
+}
+.scenario-word-main {
+  min-width: 0;
+  padding: 0;
+  text-align: left;
+  background: transparent;
   color: #255fae;
+}
+.scenario-word-main strong,
+.scenario-word-main span,
+.scenario-word-main small {
+  display: block;
+}
+.scenario-word-main span,
+.scenario-word-main small {
+  margin-top: 2px;
+  color: #64738b;
+}
+.scenario-tip {
+  display: grid;
+  gap: 6px;
+  margin: 14px 0;
+}
+.scenario-tip p {
+  margin: 0;
+}
+.voice-input {
+  width: 100%;
+  min-height: 46px;
+  color: #1769e0;
+  background: #eaf3ff;
+}
+.voice-input.listening {
+  color: #a32222;
+  background: #ffe9e9;
 }
 .speak-button {
   min-height: 38px;
@@ -803,7 +880,7 @@ button.expression-main {
   .segmented button.selected {
     background: #3a4c66;
   }
-  .choices button {
+  .choice-card {
     background: #233149;
     color: #e6ecf8;
   }

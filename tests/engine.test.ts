@@ -120,6 +120,8 @@ describe('local rules engine', () => {
   });
   it('asks for clarification on low-confidence conversation', () => {
     const engine = new ConversationEngine(scenario);
-    expect(engine.reply('banana').needsClarification).toBe(true);
+    const reply = engine.reply('banana');
+    expect(reply.needsClarification).toBe(true);
+    expect(reply.nextPartnerMeaning).toContain('订单编号');
   });
 });
