@@ -7,15 +7,25 @@ export const speechApiConfigured = Boolean(configuredEndpoint);
 
 export function speakEnglish(text: string) {
   if (!('speechSynthesis' in window)) throw new Error('此设备不支持系统朗读。');
-  window.speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = 'en-US';
-  utterance.rate = 0.82;
-  const englishVoice = speechSynthesis
-    .getVoices()
-    .find((voice) => voice.lang.toLowerCase().startsWith('en'));
-  if (englishVoice) utterance.voice = englishVoice;
-  window.speechSynthesis.speak(utterance);
+  return new Promise<void>((resolve, reject) => {
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'en-US';
+    utterance.rate = 0.82;
+    utterance.volume = 1;
+    const englishVoice = speechSynthesis
+      .getVoices()
+      .find((voice) => voice.lang.toLowerCase().startsWith('en'));
+    if (englishVoice) utterance.voice = englishVoice;
+    utterance.onend = () => resolve();
+    utterance.onerror = (event) => {
+      if (event.error === 'canceled' || event.error === 'interrupted') resolve();
+      else reject(new Error('朗读未能播放。请检查静音开关、媒体音量和系统语音设置。'));
+    };
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.resume();
+    window.speechSynthesis.speak(utterance);
+    window.setTimeout(() => window.speechSynthesis.resume(), 180);
+  });
 }
 
 export async function assessPronunciation(audio: Blob, referenceText: string) {

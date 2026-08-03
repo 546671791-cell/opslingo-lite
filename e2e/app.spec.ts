@@ -3,7 +3,7 @@ import AxeBuilder from '@axe-core/playwright';
 
 test('loads 48 scenarios, filters, trains and persists', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByText('航旅英语')).toBeVisible();
+  await expect(page.getByText('OpsLingo Lite')).toBeVisible();
   await page.getByRole('button', { name: '▦ 场景', exact: true }).click();
   await expect(page.getByText('48 个场景')).toBeVisible();
   await page.getByLabel('业务').selectOption('hotel');
@@ -19,12 +19,13 @@ test('loads 48 scenarios, filters, trains and persists', async ({ page }) => {
   await expect(page.getByRole('heading', { name: /本地规则评分/ })).toBeVisible();
   await page.reload();
   await page.getByRole('button', { name: '返回' }).click();
+  await page.getByRole('button', { name: '返回' }).click();
   await page.getByRole('button', { name: '▥ 进度', exact: true }).click();
   await expect(page.getByRole('heading', { name: '学习进度' })).toBeVisible();
 });
 test('supports vocabulary and baseline accessibility', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: '⌁ 词句', exact: true }).click();
+  await page.getByRole('button', { name: '⌁ 沟通', exact: true }).click();
   await page.getByRole('button', { name: '+ 添加词句' }).click();
   await page.getByPlaceholder('英文词句').fill('Please confirm in writing.');
   await page.getByPlaceholder('中文解释').fill('请书面确认。');
@@ -40,4 +41,15 @@ test('has no horizontal overflow on mobile', async ({ page }) => {
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true
   );
+});
+test('keeps the header fixed and shows communication tips', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: '⌁ 沟通', exact: true }).click();
+  const lesson = page.getByText('数字与时间', { exact: true });
+  expect(await lesson.count()).toBe(1);
+  await lesson.click();
+  await expect(page.getByText('💡 文化小贴士')).toBeVisible();
+  const header = page.locator('section > header');
+  expect(await header.count()).toBe(1);
+  expect(await header.evaluate((element) => getComputedStyle(element).position)).toBe('sticky');
 });
