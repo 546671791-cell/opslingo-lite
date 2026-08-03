@@ -2,9 +2,19 @@ import { App as CapacitorApp } from '@capacitor/app';
 import { SpeechRecognition } from '@capacitor-community/speech-recognition';
 import { Capacitor } from '@capacitor/core';
 import { render } from 'preact';
-import { useEffect, useMemo, useState } from 'preact/hooks';
+import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { registerSW } from 'virtual:pwa-register';
 import { PronunciationPractice } from './PronunciationPractice';
+import {
+  cefrLevels,
+  countries,
+  courseGroups,
+  lifeCourses,
+  studyMethods,
+  type CefrLevel,
+  type LifeCourse,
+  type StudyMethod
+} from './curriculum';
 import { communicationLessons } from './lessons';
 import {
   ConversationEngine,
@@ -300,7 +310,7 @@ function Nav({ page }: { page: Page }) {
           ['scenes', '场景'],
           ['talk', '对话'],
           ['progress', '进度'],
-          ['words', '沟通']
+          ['words', '课程']
         ] as const
       ).map(([target, label]) => (
         <button class={page === target ? 'active' : ''} onClick={() => go(target)}>
@@ -603,6 +613,111 @@ function Detail({
     </section>
   );
 }
+
+function VoiceReplyButton({
+  onResult,
+  notify
+}: {
+  onResult: (text: string) => void;
+  notify: (message: string) => void;
+}) {
+  const [listening, setListening] = useState(false);
+  const [recording, setRecording] = useState(false);
+  const [audioUrl, setAudioUrl] = useState('');
+  const recorder = useRef<MediaRecorder | null>(null);
+  const stream = useRef<MediaStream | null>(null);
+  const chunks = useRef<Blob[]>([]);
+  useEffect(
+    () => () => {
+      SpeechRecognition.stop().catch(() => undefined);
+      SpeechRecognition.removeAllListeners().catch(() => undefined);
+      stream.current?.getTracks().forEach((track) => track.stop());
+      if (audioUrl) URL.revokeObjectURL(audioUrl);
+    },
+    [audioUrl]
+  );
+  const startRecording = async () => {
+    if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder)
+      throw new Error('此设备既没有语音识别服务，也不支持浏览器录音。');
+    const input = await navigator.mediaDevices.getUserMedia({ audio: true });
+    stream.current = input;
+    chunks.current = [];
+    const nextRecorder = new MediaRecorder(input);
+    recorder.current = nextRecorder;
+    nextRecorder.ondataavailable = (event) => {
+      if (event.data.size) chunks.current.push(event.data);
+    };
+    nextRecorder.onstop = () => {
+      const audio = new Blob(chunks.current, { type: nextRecorder.mimeType || 'audio/webm' });
+      if (audioUrl) URL.revokeObjectURL(audioUrl);
+      setAudioUrl(URL.createObjectURL(audio));
+      stream.current?.getTracks().forEach((track) => track.stop());
+      stream.current = null;
+      setRecording(false);
+      notify('录音已完成，可以回放检查。此设备缺少系统转写服务，录音不会自动变成文字。');
+    };
+    nextRecorder.start();
+    setRecording(true);
+    notify('系统语音转写不可用，已切换为录音练习。说完后请点“停止并回放”。');
+  };
+  const toggle = async () => {
+    if (recording) {
+      recorder.current?.stop();
+      return;
+    }
+    if (listening) {
+      await SpeechRecognition.stop();
+      await SpeechRecognition.removeAllListeners();
+      setListening(false);
+      return;
+    }
+    try {
+      const permission = await SpeechRecognition.requestPermissions();
+      if (permission.speechRecognition !== 'granted')
+        throw new Error('请允许麦克风和语音识别权限。');
+      setListening(true);
+      const result = await SpeechRecognition.start({
+        language: 'en-US',
+        maxResults: 3,
+        prompt: '请用英语说出回复',
+        partialResults: false,
+        popup: true
+      });
+      if (result.matches?.[0]) onResult(result.matches[0]);
+      else notify('没有识别到清晰的英文，请靠近麦克风后重试。');
+      setListening(false);
+    } catch (error) {
+      setListening(false);
+      try {
+        await startRecording();
+      } catch (fallbackError) {
+        notify(`${(error as Error).message} ${(fallbackError as Error).message}`);
+      }
+    }
+  };
+  return (
+    <>
+      <button
+        class={`voice-input ${listening || recording ? 'listening' : ''}`}
+        type="button"
+        onClick={toggle}
+      >
+        {recording
+          ? '■ 停止并回放'
+          : listening
+            ? '正在听…请在系统面板中说英语'
+            : '🎙 用英语说出回复'}
+      </button>
+      {audioUrl && (
+        <div class="voice-playback">
+          <span>本次录音</span>
+          <audio controls src={audioUrl} />
+          <small>录音只保存在当前页面，离开训练后自动清除。</small>
+        </div>
+      )}
+    </>
+  );
+}
 function Training({
   scenario,
   onSaved,
@@ -621,7 +736,6 @@ function Training({
   const [messages, setMessages] = useState<{ role: string; text: string; meaning?: string }[]>([
     { role: 'partner', text: scenario.partnerMessage, meaning: scenario.translation }
   ]);
-  const [listening, setListening] = useState(false);
   useEffect(() => {
     getDraft(scenario.id).then((draft) => {
       if (draft) {
@@ -630,13 +744,6 @@ function Training({
       }
     });
   }, [scenario.id]);
-  useEffect(
-    () => () => {
-      SpeechRecognition.stop().catch(() => undefined);
-      SpeechRecognition.removeAllListeners().catch(() => undefined);
-    },
-    []
-  );
   const save = async (score: ReturnType<typeof scoreResponse>) => {
     const end = new Date().toISOString();
     await saveSession({
@@ -674,39 +781,6 @@ function Training({
     ]);
     setResponse('');
     if (!next.needsClarification) await submit();
-  };
-  const toggleVoiceInput = async () => {
-    if (listening) {
-      await SpeechRecognition.stop();
-      await SpeechRecognition.removeAllListeners();
-      setListening(false);
-      return;
-    }
-    try {
-      const availability = await SpeechRecognition.available();
-      if (!availability.available) throw new Error('此设备没有可用的语音输入服务。');
-      const permission = await SpeechRecognition.requestPermissions();
-      if (permission.speechRecognition !== 'granted')
-        throw new Error('请允许麦克风和语音识别权限。');
-      setListening(true);
-      await SpeechRecognition.addListener('partialResults', ({ matches }) => {
-        if (matches[0]) setResponse(matches[0]);
-      });
-      await SpeechRecognition.addListener('listeningState', ({ status }) => {
-        if (status === 'stopped') setListening(false);
-      });
-      const result = await SpeechRecognition.start({
-        language: 'en-US',
-        maxResults: 3,
-        prompt: '请用英语说出回复',
-        partialResults: true,
-        popup: false
-      });
-      if (result.matches?.[0]) setResponse(result.matches[0]);
-    } catch (error) {
-      setListening(false);
-      notify((error as Error).message);
-    }
   };
   return (
     <section class="training">
@@ -762,13 +836,7 @@ function Training({
             placeholder="输入英文回复…"
             rows={3}
           />
-          <button
-            class={`voice-input ${listening ? 'listening' : ''}`}
-            type="button"
-            onClick={toggleVoiceInput}
-          >
-            {listening ? '■ 停止语音输入' : '🎙 用英语说出回复'}
-          </button>
+          <VoiceReplyButton onResult={setResponse} notify={notify} />
         </>
       )}
       {hint && <div class="tip">{scenario.hints[0]}</div>}
@@ -952,6 +1020,7 @@ function Talk({ scenarios, reload, notice }: any) {
         placeholder="输入英文回复…"
         rows={3}
       />
+      <VoiceReplyButton onResult={setInput} notify={notice} />
       <button class="primary wide" onClick={() => send()}>
         发送
       </button>
@@ -1034,12 +1103,14 @@ function SpeakButton({
   label,
   display,
   compact = false,
+  rate = 0.82,
   notify
 }: {
   text: string;
   label: string;
   display?: string;
   compact?: boolean;
+  rate?: number;
   notify: (value: string) => void;
 }) {
   const [playing, setPlaying] = useState(false);
@@ -1051,7 +1122,7 @@ function SpeakButton({
       return;
     }
     setPlaying(true);
-    speakEnglish(text)
+    speakEnglish(text, rate)
       .catch((error: Error) => notify(error.message))
       .finally(() => setPlaying(false));
   };
@@ -1066,13 +1137,289 @@ function SpeakButton({
     </button>
   );
 }
+
+function LevelSwitcher({
+  value,
+  onChange
+}: {
+  value: CefrLevel;
+  onChange: (value: CefrLevel) => void;
+}) {
+  return (
+    <div class="level-switcher" aria-label="英语等级">
+      {cefrLevels.map((level) => (
+        <button
+          class={`${level.color} ${value === level.id ? 'active' : ''}`}
+          aria-pressed={value === level.id}
+          onClick={() => onChange(level.id)}
+        >
+          <strong>{level.id}</strong>
+          <span>{level.title}</span>
+          <small>{level.subtitle}</small>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function MethodSwitcher({
+  value,
+  onChange
+}: {
+  value: StudyMethod;
+  onChange: (value: StudyMethod) => void;
+}) {
+  return (
+    <div class="method-switcher" aria-label="练习方法">
+      {studyMethods.map((method) => (
+        <button
+          class={value === method.id ? 'active' : ''}
+          aria-pressed={value === method.id}
+          onClick={() => onChange(method.id)}
+        >
+          <strong>{method.label}</strong>
+          <small>{method.description}</small>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+const courseWordEntry = (
+  course: LifeCourse,
+  word: LifeCourse['keywords'][number]
+): VocabularyEntry => ({
+  id: `${course.id}-${word.term.replace(/\s+/g, '-')}`,
+  term: word.term,
+  phonetic: word.phonetic,
+  meaning: word.meaning,
+  category: course.group,
+  level: '进阶',
+  example: course.steps[2].phrase,
+  exampleMeaning: course.steps[2].meaning,
+  tips: [course.steps[2].note, ...course.cultureTips.slice(0, 1)]
+});
+
+function CourseDetail({
+  course,
+  level,
+  method,
+  onLevel,
+  onMethod,
+  onAdd,
+  notice
+}: {
+  course: LifeCourse;
+  level: CefrLevel;
+  method: StudyMethod;
+  onLevel: (value: CefrLevel) => void;
+  onMethod: (value: StudyMethod) => void;
+  onAdd: (entry: VocabularyEntry) => Promise<void>;
+  notice: (message: string) => void;
+}) {
+  const levelIndex = cefrLevels.findIndex((item) => item.id === level);
+  const step = course.steps[levelIndex];
+  const expressions = course.steps.slice(Math.max(0, levelIndex - 2), levelIndex + 1);
+  const [selectedWord, setSelectedWord] = useState<VocabularyEntry | null>(null);
+  const [passes, setPasses] = useState<boolean[]>([false, false, false, false, false]);
+  const practiceEntry: VocabularyEntry = {
+    id: `${course.id}-${level}`,
+    term: step.phrase,
+    phonetic: `${level} · ${step.goal}`,
+    meaning: step.meaning,
+    category: course.group,
+    level: levelIndex < 2 ? '基础' : levelIndex < 4 ? '进阶' : '商务',
+    example: step.phrase,
+    exampleMeaning: step.meaning,
+    tips: [step.note, `本级任务：${step.challenge}`]
+  };
+  return (
+    <section class="course-page">
+      <Header title={course.title} back fallback="words" />
+      <div class="course-cover">
+        <img src={`${import.meta.env.BASE_URL}${course.image}`} alt={course.title} />
+        <div>
+          <span>{course.group}</span>
+          <h2>{course.title}</h2>
+          <p>{course.titleEn}</p>
+          <small>
+            {course.minutes} 分钟 · 当前 {level}
+          </small>
+        </div>
+      </div>
+      <h2>自由切换难度</h2>
+      <LevelSwitcher value={level} onChange={onLevel} />
+      <h2>选择练习方法</h2>
+      <MethodSwitcher value={method} onChange={onMethod} />
+      <div class="level-objective">
+        <span>{level} 本课目标</span>
+        <strong>{step.goal}</strong>
+        <p>{step.challenge}</p>
+      </div>
+      {method === 'scene' && (
+        <div class="course-method-panel">
+          <h2>阶梯表达</h2>
+          <p class="muted">显示当前级别和前两级表达，帮助你看见语言如何逐步变得自然。</p>
+          <div class="expression-list">
+            {expressions.map((item) => (
+              <article class={`ladder-expression ${item.level === level ? 'current' : ''}`}>
+                <span>{item.level}</span>
+                <div>
+                  <strong>{item.phrase}</strong>
+                  <small>{item.meaning}</small>
+                  <p>{item.note}</p>
+                </div>
+                <SpeakButton text={item.phrase} label={item.phrase} compact notify={notice} />
+              </article>
+            ))}
+          </div>
+        </div>
+      )}
+      {method === 'listen' && (
+        <div class="course-method-panel listening-lab">
+          <h2>五遍精听循环</h2>
+          {[
+            '盲听：不看文字抓关键词',
+            '对照：看中英确认意思',
+            '慢听：听清弱读和连读',
+            '跟读：延迟半拍模仿',
+            '复述：脱离文字说出来'
+          ].map((label, index) => (
+            <button
+              class={passes[index] ? 'done' : ''}
+              onClick={() =>
+                setPasses(passes.map((value, position) => (position === index ? !value : value)))
+              }
+            >
+              <span>{passes[index] ? '✓' : index + 1}</span>
+              {label}
+            </button>
+          ))}
+          <div class="listen-controls">
+            <SpeakButton
+              text={step.phrase}
+              label="慢速示范"
+              display="🐢 慢速 0.68×"
+              rate={0.68}
+              notify={notice}
+            />
+            <SpeakButton
+              text={step.phrase}
+              label="自然语速示范"
+              display="🔊 自然 0.95×"
+              rate={0.95}
+              notify={notice}
+            />
+          </div>
+          <blockquote>
+            {step.phrase}
+            <small>{step.meaning}</small>
+          </blockquote>
+        </div>
+      )}
+      {method === 'shadow' && (
+        <div class="course-method-panel shadow-lab">
+          <h2>影子跟读</h2>
+          <p class="muted">先听自然语速，延迟半拍跟读；不要逐字停顿。</p>
+          <div class="shadow-script">
+            <strong>{step.phrase}</strong>
+            <small>{step.meaning}</small>
+            <SpeakButton
+              text={step.phrase}
+              label="影子跟读示范"
+              display="🔊 播放示范"
+              rate={0.9}
+              notify={notice}
+            />
+          </div>
+          <PronunciationPractice entry={practiceEntry} />
+        </div>
+      )}
+      {method === 'dialogue' && (
+        <div class="course-method-panel">
+          <h2>任务对话</h2>
+          <div class="chatbox course-dialogue">
+            <article class="bubble partner">
+              <div class="dialogue-line">
+                <span>Hi there. How can I help you today?</span>
+                <SpeakButton
+                  text="Hi there. How can I help you today?"
+                  label="对方开场"
+                  compact
+                  notify={notice}
+                />
+              </div>
+              <small>你好，今天需要什么帮助？</small>
+            </article>
+            <article class="bubble user">
+              <div class="dialogue-line">
+                <span>{step.phrase}</span>
+                <SpeakButton text={step.phrase} label="本级回答" compact notify={notice} />
+              </div>
+              <small>{step.meaning}</small>
+            </article>
+          </div>
+          <div class="culture-tips">
+            <strong>任务完成标准</strong>
+            <p>{step.challenge}</p>
+          </div>
+        </div>
+      )}
+      <h2>核心词汇</h2>
+      <div class="course-keywords">
+        {course.keywords.map((word) => (
+          <article>
+            <button onClick={() => setSelectedWord(courseWordEntry(course, word))}>
+              <strong>{word.term}</strong>
+              <span>{word.meaning}</span>
+              <small>{word.phonetic}</small>
+            </button>
+            <SpeakButton text={word.term} label={word.term} compact notify={notice} />
+          </article>
+        ))}
+      </div>
+      <h2>💡 美国生活小贴士</h2>
+      <div class="culture-tips">
+        <ul>
+          {course.cultureTips.map((tip) => (
+            <li>{tip}</li>
+          ))}
+        </ul>
+      </div>
+      {selectedWord && (
+        <WordSheet
+          entry={selectedWord}
+          onClose={() => setSelectedWord(null)}
+          onAdd={() => onAdd(selectedWord)}
+          notice={notice}
+        />
+      )}
+    </section>
+  );
+}
 function Words({ words, library, reload, reloadVocabulary, notice, lessonId }: any) {
   const [query, setQuery] = useState('');
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState('');
   const [meaning, setMeaning] = useState('');
   const [selected, setSelected] = useState<VocabularyEntry | null>(null);
+  const [level, setLevelState] = useState<CefrLevel>(
+    () => (localStorage.getItem('opslite-cefr-level') as CefrLevel | null) ?? 'A2'
+  );
+  const [method, setMethodState] = useState<StudyMethod>(
+    () => (localStorage.getItem('opslite-study-method') as StudyMethod | null) ?? 'scene'
+  );
+  const [country, setCountry] = useState('us');
   const lesson = communicationLessons.find((item) => item.id === lessonId);
+  const course = lifeCourses.find((item) => item.id === lessonId);
+  const setLevel = (value: CefrLevel) => {
+    localStorage.setItem('opslite-cefr-level', value);
+    setLevelState(value);
+  };
+  const setMethod = (value: StudyMethod) => {
+    localStorage.setItem('opslite-study-method', value);
+    setMethodState(value);
+  };
   const filtered = words.filter((w: VocabularyItem) =>
     `${w.text} ${w.meaning} ${w.tags.join(' ')}`.toLowerCase().includes(query.toLowerCase())
   );
@@ -1127,6 +1474,18 @@ function Words({ words, library, reload, reloadVocabulary, notice, lessonId }: a
     await reload();
     notice('已加入我的词句。');
   };
+  if (course)
+    return (
+      <CourseDetail
+        course={course}
+        level={level}
+        method={method}
+        onLevel={setLevel}
+        onMethod={setMethod}
+        onAdd={addEntry}
+        notice={notice}
+      />
+    );
   if (lesson) {
     const entries = library.filter((entry: VocabularyEntry) =>
       lesson.categories.includes(entry.category)
@@ -1192,7 +1551,75 @@ function Words({ words, library, reload, reloadVocabulary, notice, lessonId }: a
   }
   return (
     <section>
-      <Header title="实用沟通" />
+      <Header title="英语进阶书" />
+      <div class="academy-hero">
+        <span>从真实生活出发</span>
+        <h2>今天想把英语练到哪一级？</h2>
+        <p>六级自由切换 · 四种练习法 · 中英双语 · 可离线学习</p>
+      </div>
+      <LevelSwitcher value={level} onChange={setLevel} />
+      <MethodSwitcher value={method} onChange={setMethod} />
+      <div class="country-strip" aria-label="国家与地区">
+        {countries.map((item) => (
+          <button
+            class={country === item.id ? 'active' : ''}
+            disabled={!item.available}
+            onClick={() => setCountry(item.id)}
+          >
+            {item.label}
+            {!item.available && <small>即将更新</small>}
+          </button>
+        ))}
+      </div>
+      <div class="academy-heading line">
+        <div>
+          <h2>美国生活场景</h2>
+          <p class="muted">按真实任务学习，不只背单词。</p>
+        </div>
+        <span class="level-badge">{level}</span>
+      </div>
+      {courseGroups.map((group) => (
+        <div class="course-group">
+          <h3>{group}</h3>
+          <div class="course-row">
+            {lifeCourses
+              .filter((item) => item.group === group)
+              .map((item) => (
+                <button class="course-card" onClick={() => go('words', item.id)}>
+                  <img src={`${import.meta.env.BASE_URL}${item.image}`} alt="" />
+                  <span>
+                    <strong>{item.title}</strong>
+                    <small>{item.titleEn}</small>
+                    <em>
+                      {item.minutes} 分钟 · {level} ·{' '}
+                      {studyMethods.find((x) => x.id === method)?.label}
+                    </em>
+                  </span>
+                </button>
+              ))}
+          </div>
+        </div>
+      ))}
+      <div class="line academy-tools">
+        <h2>词汇与主题</h2>
+        <button
+          onClick={async () => {
+            try {
+              const refreshed = await refreshVocabularyContent();
+              await reloadVocabulary();
+              notice(
+                refreshed.updatedEntries
+                  ? `已更新 ${refreshed.updatedEntries} 条词汇。`
+                  : '词汇已是最新。'
+              );
+            } catch (error) {
+              notice((error as Error).message);
+            }
+          }}
+        >
+          ↻ 更新
+        </button>
+      </div>
       <input
         aria-label="搜索词句"
         value={query}

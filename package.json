@@ -6,8 +6,10 @@
   "scripts": {
     "dev": "vite",
     "validate:content": "tsx scripts/build-content-catalog.ts --check",
+    "validate:vocabulary": "tsx scripts/build-us-life-vocabulary.ts --check",
     "build:catalog": "tsx scripts/build-content-catalog.ts",
-    "build": "npm run validate:content && tsc -b && vite build",
+    "build:vocabulary": "tsx scripts/build-us-life-vocabulary.ts",
+    "build": "npm run validate:content && npm run validate:vocabulary && tsc -b && vite build",
     "preview": "vite preview",
     "lint": "eslint . --max-warnings=0",
     "format": "prettier --write .",

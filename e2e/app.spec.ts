@@ -25,7 +25,7 @@ test('loads 48 scenarios, filters, trains and persists', async ({ page }) => {
 });
 test('supports vocabulary and baseline accessibility', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: '⌁ 沟通', exact: true }).click();
+  await page.getByRole('button', { name: '⌁ 课程', exact: true }).click();
   await page.getByRole('button', { name: '+ 添加词句' }).click();
   await page.getByPlaceholder('英文词句').fill('Please confirm in writing.');
   await page.getByPlaceholder('中文解释').fill('请书面确认。');
@@ -44,7 +44,7 @@ test('has no horizontal overflow on mobile', async ({ page }) => {
 });
 test('keeps the header fixed and shows communication tips', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: '⌁ 沟通', exact: true }).click();
+  await page.getByRole('button', { name: '⌁ 课程', exact: true }).click();
   const lesson = page.getByText('数字与时间', { exact: true });
   expect(await lesson.count()).toBe(1);
   await lesson.click();
@@ -55,7 +55,7 @@ test('keeps the header fixed and shows communication tips', async ({ page }) => 
 });
 test('shows update controls, word details and bilingual playable dialogue', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: '⌁ 沟通', exact: true }).click();
+  await page.getByRole('button', { name: '⌁ 课程', exact: true }).click();
   await expect(page.getByRole('button', { name: '↻ 刷新词汇' })).toBeVisible();
   await page.getByText('日常交流', { exact: true }).click();
   await expect(page.getByRole('button', { name: '↻ 检查更新并刷新本主题词汇' })).toBeVisible();
@@ -71,4 +71,26 @@ test('shows update controls, word details and bilingual playable dialogue', asyn
   await expect(page.locator('.bubble.partner .speak-button')).toBeVisible();
   await expect(page.locator('.choice-card small').first()).toBeVisible();
   await expect(page.locator('.choice-card .speak-button').first()).toBeVisible();
+});
+test('switches CEFR levels and study methods in the US life curriculum', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: '⌁ 课程', exact: true }).click();
+  await expect(page.getByRole('heading', { name: '今天想把英语练到哪一级？' })).toBeVisible();
+  await page.getByRole('button', { name: /C2 精通/ }).click();
+  await expect(page.locator('.level-badge')).toHaveText('C2');
+  await page.getByRole('button', { name: /在美国餐厅点餐/ }).click();
+  await expect(page.getByText('用自然语气协商特殊需求')).toBeVisible();
+  await expect(page.getByText(/I know it is a bit specific/)).toBeVisible();
+  await page
+    .getByRole('button', { name: /五遍精听/ })
+    .first()
+    .click();
+  await expect(page.getByRole('button', { name: '朗读 慢速示范' })).toBeVisible();
+  await expect(page.getByText('复述：脱离文字说出来')).toBeVisible();
+  await page
+    .getByRole('button', { name: /任务对话/ })
+    .first()
+    .click();
+  await expect(page.locator('.course-dialogue .bubble')).toHaveCount(2);
+  await expect(page.locator('.course-dialogue small').first()).toContainText('你好');
 });

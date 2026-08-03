@@ -17,14 +17,14 @@ export async function stopEnglish() {
   if ('speechSynthesis' in window) window.speechSynthesis.cancel();
 }
 
-export async function speakEnglish(text: string) {
+export async function speakEnglish(text: string, rate = 0.82) {
   await stopEnglish();
   if (Capacitor.isNativePlatform()) {
     await Promise.race([
       TextToSpeech.speak({
         text,
         lang: 'en-US',
-        rate: 0.82,
+        rate,
         pitch: 1,
         volume: 1,
         queueStrategy: 0
@@ -45,7 +45,7 @@ export async function speakEnglish(text: string) {
     };
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'en-US';
-    utterance.rate = 0.82;
+    utterance.rate = rate;
     utterance.volume = 1;
     const englishVoice = speechSynthesis
       .getVoices()
