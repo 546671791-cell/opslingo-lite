@@ -1969,7 +1969,7 @@ function Settings({
       <div class="cards">
         <article class="card">
           <h2>应用与内容</h2>
-          <p>应用版本 1.0.0 · 内容目录版本 1</p>
+          <p>应用版本 1.1.0 · 内容目录版本 1</p>
           <button onClick={update} disabled={busy}>
             {busy ? '检查中…' : '检查场景更新'}
           </button>
