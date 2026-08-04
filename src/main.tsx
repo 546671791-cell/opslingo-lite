@@ -56,6 +56,7 @@ import {
 } from './storage';
 import {
   naturalSpeechConfigured,
+  prefetchNaturalEnglish,
   speakEnglish,
   stopEnglish,
   synthesizeNaturalEnglish
@@ -141,6 +142,27 @@ const download = (name: string, value: unknown) => {
   URL.revokeObjectURL(a.href);
 };
 
+const uniqueSpeechTexts = (texts: Array<string | undefined>) => [
+  ...new Set(texts.map((text) => text?.trim()).filter((text): text is string => Boolean(text)))
+];
+
+const scenarioSpeechTexts = (scenario: Scenario) =>
+  uniqueSpeechTexts([
+    scenario.partnerMessage,
+    scenario.reference.body,
+    ...scenario.phrases.map((phrase) => phrase.text)
+  ]);
+
+const coreSpeechTexts = (scenarios: Scenario[]) =>
+  uniqueSpeechTexts([
+    ...scenarios.flatMap(scenarioSpeechTexts),
+    ...communicationLessons.flatMap((lesson) => lesson.phrases.map((phrase) => phrase.text)),
+    ...lifeCourses.flatMap((course) => [
+      ...course.steps.map((step) => step.phrase),
+      'Hi there. How can I help you today?'
+    ])
+  ]);
+
 function App() {
   const [onboarded, setOnboarded] = useState(
     () => localStorage.getItem('opslite-onboarding-v2') === 'complete'
@@ -153,6 +175,10 @@ function App() {
   const [notice, setNotice] = useState('');
   const [offline, setOffline] = useState(!navigator.onLine);
   const [availableUpdate, setAvailableUpdate] = useState<(() => void) | null>(null);
+  const [speechPreparation, setSpeechPreparation] = useState<{
+    completed: number;
+    total: number;
+  } | null>(null);
   const reload = async () => {
     setAllSessions(await sessions());
     setWords(await vocabulary());
@@ -164,7 +190,14 @@ function App() {
     const paths = savedRoutes();
     if (paths.at(-1) !== initialPath) storeRoutes([...paths, initialPath].slice(-20));
     loadLocalContent()
-      .then(setScenarios)
+      .then((loaded) => {
+        setScenarios(loaded);
+        if (naturalSpeechConfigured) {
+          void prefetchNaturalEnglish(coreSpeechTexts(loaded), (completed, total) =>
+            setSpeechPreparation({ completed, total })
+          ).then(() => setSpeechPreparation(null));
+        }
+      })
       .then(reload)
       .catch((e: Error) => setNotice(e.message));
     reloadVocabulary().catch((e: Error) => setNotice(e.message));
@@ -281,6 +314,12 @@ function App() {
       {availableUpdate && (
         <div class="banner update">
           发现应用更新。<button onClick={() => availableUpdate()}>保存后更新</button>
+        </div>
+      )}
+      {speechPreparation && (
+        <div class="banner update" role="status">
+          正在下载自然美式句子与对话语音 {speechPreparation.completed}/{speechPreparation.total}
+          ；下载完成后播放无需等待。
         </div>
       )}
       {page === 'home' && <Home {...shared} />}
@@ -552,6 +591,9 @@ function Detail({
 }) {
   const [translation, setTranslation] = useState(false);
   const [selectedWord, setSelectedWord] = useState<VocabularyEntry | null>(null);
+  useEffect(() => {
+    void prefetchNaturalEnglish(scenarioSpeechTexts(scenario));
+  }, [scenario.id]);
   return (
     <section>
       <Header title="场景详情" back fallback="scenes" />
@@ -768,6 +810,9 @@ function Training({
     { role: 'partner', text: scenario.partnerMessage, meaning: scenario.translation }
   ]);
   useEffect(() => {
+    void prefetchNaturalEnglish(scenarioSpeechTexts(scenario));
+  }, [scenario.id]);
+  useEffect(() => {
     getDraft(scenario.id).then((draft) => {
       if (draft) {
         setSubject(draft.subject);
@@ -942,6 +987,9 @@ function Talk({ scenarios, reload, notice }: any) {
     if (scenario)
       setLog([{ role: 'partner', text: scenario.partnerMessage, meaning: scenario.translation }]);
   }, [scenarioId]);
+  useEffect(() => {
+    if (scenario) void prefetchNaturalEnglish(scenarioSpeechTexts(scenario));
+  }, [scenario?.id]);
   if (!scenario)
     return (
       <section>
@@ -1309,6 +1357,12 @@ function CourseDetail({
   const expressions = course.steps.slice(Math.max(0, levelIndex - 2), levelIndex + 1);
   const [selectedWord, setSelectedWord] = useState<VocabularyEntry | null>(null);
   const [passes, setPasses] = useState<boolean[]>([false, false, false, false, false]);
+  useEffect(() => {
+    void prefetchNaturalEnglish([
+      ...course.steps.map((item) => item.phrase),
+      'Hi there. How can I help you today?'
+    ]);
+  }, [course.id]);
   const practiceEntry: VocabularyEntry = {
     id: `${course.id}-${level}`,
     term: step.phrase,
@@ -1883,6 +1937,9 @@ function LessonDetail({
   notice,
   children
 }: any) {
+  useEffect(() => {
+    void prefetchNaturalEnglish(lesson.phrases.map((phrase: { text: string }) => phrase.text));
+  }, [lesson.id]);
   return (
     <section class="lesson-page">
       <Header title={lesson.title} back fallback="words" />
@@ -1974,6 +2031,9 @@ function WordSheet({
     .toUpperCase()
     .split('')
     .join(' · ');
+  useEffect(() => {
+    void prefetchNaturalEnglish([entry.term, entry.example]);
+  }, [entry.id]);
   return (
     <div class="sheet-backdrop" role="presentation" onClick={onClose}>
       <article
