@@ -54,7 +54,12 @@ import {
   uninstallOfflineVocabularyPack,
   vocabulary
 } from './storage';
-import { speakEnglish, stopEnglish } from './pronunciation';
+import {
+  naturalSpeechConfigured,
+  speakEnglish,
+  stopEnglish,
+  synthesizeNaturalEnglish
+} from './pronunciation';
 import type {
   CatalogPack,
   PracticeSession,
@@ -1146,36 +1151,66 @@ function SpeakButton({
 }) {
   const [playing, setPlaying] = useState(false);
   const player = useRef<HTMLAudioElement | null>(null);
+  const playRequest = useRef(0);
   const play = async () => {
     if (playing) {
+      playRequest.current += 1;
       player.current?.pause();
       player.current = null;
       await stopEnglish().catch((error: Error) => notify(error.message));
       setPlaying(false);
       return;
     }
+    const requestId = playRequest.current + 1;
+    playRequest.current = requestId;
     setPlaying(true);
+    let objectUrl: string | null = null;
     try {
-      if (audio) {
+      if (naturalSpeechConfigured) {
+        const naturalAudio = await synthesizeNaturalEnglish(text);
+        if (requestId !== playRequest.current) return;
+        objectUrl = URL.createObjectURL(naturalAudio);
+        const nextPlayer = new Audio(objectUrl);
+        player.current = nextPlayer;
+        await nextPlayer.play();
+        await new Promise<void>((resolve, reject) => {
+          nextPlayer.onended = () => resolve();
+          nextPlayer.onpause = () => resolve();
+          nextPlayer.onerror = () => reject(new Error('自然美式语音未能播放。'));
+        });
+      } else if (audio) {
         const nextPlayer = new Audio(`${import.meta.env.BASE_URL}${audio}`);
         player.current = nextPlayer;
         await nextPlayer.play();
         await new Promise<void>((resolve, reject) => {
           nextPlayer.onended = () => resolve();
+          nextPlayer.onpause = () => resolve();
           nextPlayer.onerror = () => reject(new Error('内置发音未能播放，已改用系统朗读。'));
         });
-      } else await speakEnglish(text, rate);
+      } else {
+        if (requestId !== playRequest.current) return;
+        await speakEnglish(text, rate);
+      }
     } catch (error) {
       if (audio) {
         try {
           await speakEnglish(text, rate);
+          if (naturalSpeechConfigured) notify('自然美式语音暂时不可用，已切换为离线参考朗读。');
         } catch {
           notify((error as Error).message);
         }
-      } else notify((error as Error).message);
+      } else {
+        try {
+          await speakEnglish(text, rate);
+          if (naturalSpeechConfigured) notify('自然美式语音暂时不可用，已切换为系统朗读。');
+        } catch {
+          notify((error as Error).message);
+        }
+      }
     } finally {
-      player.current = null;
-      setPlaying(false);
+      if (requestId === playRequest.current) player.current = null;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      if (requestId === playRequest.current) setPlaying(false);
     }
   };
   return (
@@ -2161,7 +2196,10 @@ function Settings({
         </article>
         <article class="card">
           <h2>隐私与离线</h2>
-          <p>没有登录、分析追踪或 AI 接口。你的输入不会上传；未主动保存的训练文字不会持久化。</p>
+          <p>
+            没有登录或分析追踪。自然美式朗读只会把你点播的英文文本发送给 Azure
+            Speech；跟读录音仅在你点“上传并评分”后发送。服务端不保存音频、文本或密钥。
+          </p>
         </article>
       </div>
     </section>

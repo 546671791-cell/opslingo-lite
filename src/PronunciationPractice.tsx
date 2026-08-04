@@ -6,7 +6,7 @@ import {
   microphoneErrorMessage
 } from './microphone';
 import { scoreLocalPronunciation, type LocalPronunciationResult } from './localPronunciation';
-import { assessPronunciation, speechApiConfigured } from './pronunciation';
+import { assessPronunciation, naturalSpeechConfigured, speechApiConfigured } from './pronunciation';
 import { startEnglishDictation, type RecognitionController } from './speechRecognition';
 import type { PronunciationAssessment, VocabularyEntry } from './types';
 
@@ -129,10 +129,19 @@ export function PronunciationPractice({ entry }: { entry: VocabularyEntry }) {
   return (
     <section class="pronunciation" aria-label="发音练习">
       <h3>跟读与发音评分</h3>
-      <p class="muted">先听内置示范，再跟读；本地判断不会上传录音。</p>
+      <p class="muted">
+        优先听自然美式示范，再跟读；离线时使用本机参考朗读。本地判断不会上传录音。
+      </p>
       <div class="offline-voice-row">
-        <span>✓ 核心发音包已随应用内置，无需跳转 Android 安装页面</span>
+        <span>
+          {naturalSpeechConfigured
+            ? '✓ 已连接 Azure 神经语音：句子按美式口语风格朗读'
+            : '离线示范模式：核心发音包已内置，无需跳转 Android 安装页面'}
+        </span>
       </div>
+      {!naturalSpeechConfigured && (
+        <p class="inline-warning">自然美式语音尚未连接；当前使用离线参考朗读。</p>
+      )}
       <button
         class={`local-shadow-button ${localListening ? 'listening' : ''}`}
         onClick={toggleLocalPractice}

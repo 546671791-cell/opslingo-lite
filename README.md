@@ -43,16 +43,16 @@ npm run android:debug
 
 生成文件为 `android/app/build/outputs/apk/debug/app-debug.apk`。它由调试密钥签名，适合本机安装测试，不适合发布到应用商店。推送 `main` 也会运行 **Android Debug APK** 工作流，产物可在该次 Actions 的 Artifacts 中下载。
 
-## Azure Speech 发音评测（可选）
+## Azure Speech 自然美式朗读与发音评测（可选）
 
-朗读功能不需要任何云服务。发音评测需要 Azure Speech 资源与本仓库的无状态 Azure Function 代理：订阅密钥绝不会写进 PWA、APK、仓库或 GitHub Pages。Azure 的短音频 REST 评测支持参考文本、准确度、流利度、完整度与韵律等字段；本应用把浏览器录音转为 16 kHz PCM WAV 后再上传。
+离线时，应用可使用内置参考音和系统朗读；接入 Azure 后，所有单词、例句、对话的播放按钮会优先使用 `en-US-JennyNeural` 的美式神经语音（`chat` 风格）。发音评测同样使用 Azure Speech 与本仓库的无状态 Azure Function 代理：订阅密钥绝不会写进 PWA、APK、仓库或 GitHub Pages。Azure 的短音频 REST 评测支持参考文本、准确度、流利度、完整度与韵律等字段；本应用把浏览器录音转为 16 kHz PCM WAV 后再上传。
 
 1. 在 Azure 创建 Speech 资源，记录区域和访问密钥。
 2. 在 Function App 的 Configuration 中设置 `AZURE_SPEECH_KEY`、`AZURE_SPEECH_REGION` 与 `ALLOWED_ORIGINS`。后者至少应包含 `https://546671791-cell.github.io,http://localhost,https://localhost`。
 3. 将 Function App 的发布配置文件作为仓库 Secret `AZURE_FUNCTIONAPP_PUBLISH_PROFILE` 保存；在 Actions 手动运行 **Deploy Azure Speech Proxy**，输入 Function App 名称。
 4. 在仓库 Settings → Secrets and variables → Actions → Variables 设置 `VITE_SPEECH_API_URL`，值为 `https://YOUR-FUNCTION.azurewebsites.net/api/pronunciation`；手动运行 Pages 工作流重新构建。
 
-本地调试时复制 `.env.example` 为 `.env` 并仅填写 Function URL；不得填写 Azure 订阅密钥。复制 `azure-function/local.settings.example.json` 为 `azure-function/local.settings.json` 时才填写本机开发密钥，该文件已被 Git 忽略。Function 仅接受配置过的来源，单次音频最大约 30 秒，不记录请求正文或音频。
+本地调试时复制 `.env.example` 为 `.env` 并仅填写 Function URL；不得填写 Azure 订阅密钥。复制 `azure-function/local.settings.example.json` 为 `azure-function/local.settings.json` 时才填写本机开发密钥，该文件已被 Git 忽略。Function 仅接受配置过的来源，单次音频最大约 30 秒；自然朗读只转发本次点播文本，评分只转发用户主动上传的录音，不记录请求正文、音频或文本。
 
 ## 内容包
 
@@ -74,7 +74,7 @@ npm run validate:content
 
 ## iPhone 15 安装与离线
 
-用 Safari 打开 Pages 地址，点分享按钮，选择“添加到主屏幕”。首次在线加载完成后，应用壳和已下载内容可离线打开。词汇与场景目录检查需要联网；普通训练文字不会上传。只有你主动提交发音评分时，短音频和该次跟读文本会通过 Function 转发到 Azure Speech。
+用 Safari 打开 Pages 地址，点分享按钮，选择“添加到主屏幕”。首次在线加载完成后，应用壳和已下载内容可离线打开。词汇与场景目录检查需要联网；普通训练文字不会上传。自然朗读仅在用户点播放时转发该段英文文本；只有用户主动提交发音评分时，短音频和该次跟读文本会通过 Function 转发到 Azure Speech。
 
 ## 备份、隐私与限制
 
