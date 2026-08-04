@@ -44,6 +44,12 @@ test('has no horizontal overflow on mobile', async ({ page }) => {
 });
 test('keeps the header fixed and shows communication tips', async ({ page }) => {
   await page.goto('/');
+  const homeHeader = page.locator('section > header');
+  const hero = page.locator('.hero');
+  const positions = await Promise.all([homeHeader.boundingBox(), hero.boundingBox()]);
+  expect(positions[0]).not.toBeNull();
+  expect(positions[1]).not.toBeNull();
+  expect(positions[1]!.y).toBeGreaterThanOrEqual(positions[0]!.y + positions[0]!.height + 10);
   await page.getByRole('button', { name: '⌁ 课程', exact: true }).click();
   const lesson = page.getByText('数字与时间', { exact: true });
   expect(await lesson.count()).toBe(1);
@@ -52,6 +58,36 @@ test('keeps the header fixed and shows communication tips', async ({ page }) => 
   const header = page.locator('section > header');
   expect(await header.count()).toBe(1);
   expect(await header.evaluate((element) => getComputedStyle(element).position)).toBe('sticky');
+});
+test('writes live English speech recognition into the reply box', async ({ page }) => {
+  await page.addInitScript(() => {
+    class MockSpeechRecognition {
+      lang = '';
+      continuous = false;
+      interimResults = false;
+      maxAlternatives = 1;
+      onresult: ((event: unknown) => void) | null = null;
+      onerror: ((event: unknown) => void) | null = null;
+      onend: (() => void) | null = null;
+      start() {
+        window.setTimeout(() => {
+          this.onresult?.({ results: [[{ transcript: 'Could I get the check please?' }]] });
+          this.onend?.();
+        }, 20);
+      }
+      stop() {
+        this.onend?.();
+      }
+      abort() {}
+    }
+    (window as any).SpeechRecognition = MockSpeechRecognition;
+    (window as any).webkitSpeechRecognition = MockSpeechRecognition;
+  });
+  await page.goto('/');
+  await expect(page.getByRole('button', { name: '继续训练' })).toBeVisible();
+  await page.getByRole('button', { name: '◌ 对话', exact: true }).click();
+  await page.getByRole('button', { name: /用英语说出回复/ }).click();
+  await expect(page.getByPlaceholder('输入英文回复…')).toHaveValue('Could I get the check please?');
 });
 test('shows update controls, word details and bilingual playable dialogue', async ({ page }) => {
   await page.goto('/');

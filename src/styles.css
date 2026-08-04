@@ -64,8 +64,11 @@ section > header {
   position: sticky;
   top: env(safe-area-inset-top);
   z-index: 8;
-  background: #f4f6faed;
+  padding-bottom: 4px;
+  background: #f4f6fa;
   backdrop-filter: blur(14px);
+  border-bottom: 1px solid #e3e8f0;
+  box-shadow: 0 8px 12px #f4f6fa;
 }
 section > header h1 {
   font-size: 1.35rem;
@@ -1180,6 +1183,23 @@ button.expression-main {
   color: #765000;
   background: #fff2ce;
 }
+.permission-help {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid #efc56f;
+  border-radius: 14px;
+  color: #684300;
+  background: #fff8e8;
+}
+.permission-help span {
+  line-height: 1.45;
+}
+.permission-help button {
+  justify-self: start;
+  color: #fff;
+  background: #1769e0;
+}
 .assessment-result {
   display: grid;
   gap: 8px;
@@ -1244,7 +1264,9 @@ button.expression-main {
     color: #e6ecf8;
   }
   section > header {
-    background: #111722ed;
+    background: #111722;
+    border-color: #283548;
+    box-shadow: 0 8px 12px #111722;
   }
   .tag {
     color: #b7d2fb;

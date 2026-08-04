@@ -1,5 +1,10 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { recordedAudioToWav } from './audio';
+import {
+  ensureMicrophonePermission,
+  isMicrophonePermissionError,
+  microphoneErrorMessage
+} from './microphone';
 import { assessPronunciation, speechApiConfigured } from './pronunciation';
 import type { PronunciationAssessment, VocabularyEntry } from './types';
 
@@ -9,6 +14,7 @@ export function PronunciationPractice({ entry }: { entry: VocabularyEntry }) {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('先听示范，再录下自己的跟读。');
   const [result, setResult] = useState<PronunciationAssessment | null>(null);
+  const [permissionBlocked, setPermissionBlocked] = useState(false);
   const recorder = useRef<MediaRecorder | null>(null);
   const stream = useRef<MediaStream | null>(null);
   const chunks = useRef<Blob[]>([]);
@@ -25,6 +31,7 @@ export function PronunciationPractice({ entry }: { entry: VocabularyEntry }) {
       return;
     }
     try {
+      await ensureMicrophonePermission();
       const input = await navigator.mediaDevices.getUserMedia({ audio: true });
       stream.current = input;
       chunks.current = [];
@@ -50,9 +57,11 @@ export function PronunciationPractice({ entry }: { entry: VocabularyEntry }) {
       setResult(null);
       setAudio(null);
       setRecording(true);
+      setPermissionBlocked(false);
       setMessage('正在录音…请朗读上方英文，完成后点停止。');
     } catch (error) {
-      setMessage(`无法开启麦克风：${(error as Error).message}`);
+      setPermissionBlocked(isMicrophonePermissionError(error));
+      setMessage(microphoneErrorMessage(error));
     }
   };
 
@@ -94,6 +103,15 @@ export function PronunciationPractice({ entry }: { entry: VocabularyEntry }) {
       <p role="status" class="muted">
         {busy ? '处理中…' : message}
       </p>
+      {permissionBlocked && (
+        <div class="permission-help">
+          <strong>开启后如何继续</strong>
+          <span>修改系统或浏览器权限后回到这里，点击“重新请求麦克风”。</span>
+          <button onClick={start} disabled={busy}>
+            重新请求麦克风
+          </button>
+        </div>
+      )}
       {result && <AssessmentResult result={result} />}
     </section>
   );
