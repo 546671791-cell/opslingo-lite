@@ -136,7 +136,7 @@ export function PronunciationPractice({ entry }: { entry: VocabularyEntry }) {
         <span>
           {naturalSpeechConfigured
             ? '✓ 已连接 Azure 神经语音：句子按美式口语风格朗读'
-            : '离线示范模式：核心发音包已内置，无需跳转 Android 安装页面'}
+            : '离线示范模式：核心发音包已随应用内置，无需跳转 Android 安装页面'}
         </span>
       </div>
       {!naturalSpeechConfigured && (
