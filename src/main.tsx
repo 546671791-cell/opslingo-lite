@@ -4,6 +4,7 @@ import { render } from 'preact';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { registerSW } from 'virtual:pwa-register';
 import { PronunciationPractice } from './PronunciationPractice';
+import { PackOnboarding } from './PackOnboarding';
 import {
   cefrLevels,
   countries,
@@ -36,9 +37,12 @@ import {
   clearAll,
   deleteVocabulary,
   exportData,
+  fetchOfflineVocabularyCatalog,
   getDraft,
   id,
   importData,
+  installOfflineVocabularyPacks,
+  installedVocabularyPackIds,
   loadLocalContent,
   loadVocabularyContent,
   refreshVocabularyContent,
@@ -47,6 +51,7 @@ import {
   saveSession,
   saveVocabulary,
   sessions,
+  uninstallOfflineVocabularyPack,
   vocabulary
 } from './storage';
 import { speakEnglish, stopEnglish } from './pronunciation';
@@ -55,6 +60,7 @@ import type {
   PracticeSession,
   Scenario,
   VocabularyEntry,
+  VocabularyCatalog,
   VocabularyItem
 } from './types';
 import './styles.css';
@@ -131,6 +137,9 @@ const download = (name: string, value: unknown) => {
 };
 
 function App() {
+  const [onboarded, setOnboarded] = useState(
+    () => localStorage.getItem('opslite-onboarding-v2') === 'complete'
+  );
   const [location, setLocation] = useState(route());
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
   const [allSessions, setAllSessions] = useState<PracticeSession[]>([]);
@@ -240,6 +249,15 @@ function App() {
     reloadVocabulary,
     notice: (message: string) => setNotice(message)
   };
+  if (!onboarded)
+    return (
+      <PackOnboarding
+        onComplete={async () => {
+          await reloadVocabulary();
+          setOnboarded(true);
+        }}
+      />
+    );
   return (
     <main class="app-shell">
       {offline && (
@@ -276,7 +294,15 @@ function App() {
       {page === 'talk' && <Talk {...shared} />}
       {page === 'progress' && <Progress {...shared} />}
       {page === 'words' && <Words {...shared} lessonId={value} />}
-      {page === 'settings' && <Settings onReload={reload} notify={setNotice} />}
+      {page === 'settings' && (
+        <Settings
+          onReload={async () => {
+            await reload();
+            await reloadVocabulary();
+          }}
+          notify={setNotice}
+        />
+      )}
       {!['detail', 'train', 'settings'].includes(page) && !(page === 'words' && value) && (
         <Nav page={page} />
       )}
@@ -326,7 +352,7 @@ function Nav({ page }: { page: Page }) {
     </nav>
   );
 }
-function Home({ scenarios, allSessions, statuses, library, notice, reloadVocabulary }: any) {
+function Home({ scenarios, allSessions, statuses, library, notice }: any) {
   const completed = overallCompletion([...statuses.values()]);
   const hotel = scenarios.filter((s: Scenario) => s.category === 'hotel');
   const flight = scenarios.filter((s: Scenario) => s.category === 'flight');
@@ -390,23 +416,7 @@ function Home({ scenarios, allSessions, statuses, library, notice, reloadVocabul
       </div>
       <div class="card line">
         <span>日常词汇包 · {library.length} 词句</span>
-        <button
-          onClick={async () => {
-            try {
-              const refreshed = await refreshVocabularyContent();
-              await reloadVocabulary();
-              notice(
-                refreshed.updatedEntries
-                  ? `已更新 ${refreshed.updatedEntries} 条词汇，学习记录已保留。`
-                  : '词汇已是最新。'
-              );
-            } catch (e) {
-              notice((e as Error).message);
-            }
-          }}
-        >
-          刷新词汇
-        </button>
+        <button onClick={() => go('settings')}>管理词汇包</button>
       </div>
       <InstallTip />
     </section>
@@ -1120,6 +1130,7 @@ function Progress({ scenarios, allSessions, statuses }: any) {
 function SpeakButton({
   text,
   label,
+  audio,
   display,
   compact = false,
   rate = 0.82,
@@ -1127,23 +1138,45 @@ function SpeakButton({
 }: {
   text: string;
   label: string;
+  audio?: string;
   display?: string;
   compact?: boolean;
   rate?: number;
   notify: (value: string) => void;
 }) {
   const [playing, setPlaying] = useState(false);
-  const play = () => {
+  const player = useRef<HTMLAudioElement | null>(null);
+  const play = async () => {
     if (playing) {
-      stopEnglish()
-        .catch((error: Error) => notify(error.message))
-        .finally(() => setPlaying(false));
+      player.current?.pause();
+      player.current = null;
+      await stopEnglish().catch((error: Error) => notify(error.message));
+      setPlaying(false);
       return;
     }
     setPlaying(true);
-    speakEnglish(text, rate)
-      .catch((error: Error) => notify(error.message))
-      .finally(() => setPlaying(false));
+    try {
+      if (audio) {
+        const nextPlayer = new Audio(`${import.meta.env.BASE_URL}${audio}`);
+        player.current = nextPlayer;
+        await nextPlayer.play();
+        await new Promise<void>((resolve, reject) => {
+          nextPlayer.onended = () => resolve();
+          nextPlayer.onerror = () => reject(new Error('内置发音未能播放，已改用系统朗读。'));
+        });
+      } else await speakEnglish(text, rate);
+    } catch (error) {
+      if (audio) {
+        try {
+          await speakEnglish(text, rate);
+        } catch {
+          notify((error as Error).message);
+        }
+      } else notify((error as Error).message);
+    } finally {
+      player.current = null;
+      setPlaying(false);
+    }
   };
   return (
     <button
@@ -1416,7 +1449,7 @@ function CourseDetail({
     </section>
   );
 }
-function Words({ words, library, reload, reloadVocabulary, notice, lessonId }: any) {
+function Words({ words, library, reload, notice, lessonId }: any) {
   const [query, setQuery] = useState('');
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState('');
@@ -1429,6 +1462,9 @@ function Words({ words, library, reload, reloadVocabulary, notice, lessonId }: a
     () => (localStorage.getItem('opslite-study-method') as StudyMethod | null) ?? 'scene'
   );
   const [country, setCountry] = useState('us');
+  const [batchCursor, setBatchCursor] = useState(
+    () => Number(localStorage.getItem(`opslite-word-batch-${lessonId ?? 'root'}`)) || 0
+  );
   const lesson = communicationLessons.find((item) => item.id === lessonId);
   const course = lifeCourses.find((item) => item.id === lessonId);
   const setLevel = (value: CefrLevel) => {
@@ -1493,6 +1529,27 @@ function Words({ words, library, reload, reloadVocabulary, notice, lessonId }: a
     await reload();
     notice('已加入我的词句。');
   };
+  const reviewWord = async (item: VocabularyItem, confidence: 'again' | 'hard' | 'known') => {
+    const current = item.reviewStage ?? 0;
+    const stage =
+      confidence === 'again'
+        ? Math.max(0, current - 1)
+        : confidence === 'hard'
+          ? Math.max(1, current)
+          : Math.min(5, current + 1);
+    const intervals = [1, 3, 7, 14, 45, 120];
+    await saveVocabulary({
+      ...item,
+      reviewStage: stage,
+      mastered: stage >= 4,
+      lastReviewedAt: new Date().toISOString(),
+      nextReview: localDate(new Date(Date.now() + intervals[stage] * 86400000))
+    });
+    await reload();
+    notice(
+      `已按“${confidence === 'again' ? '不熟' : confidence === 'hard' ? '模糊' : '认识'}”安排下次复习。`
+    );
+  };
   if (course)
     return (
       <CourseDetail
@@ -1506,19 +1563,34 @@ function Words({ words, library, reload, reloadVocabulary, notice, lessonId }: a
       />
     );
   if (lesson) {
-    const entries = library.filter((entry: VocabularyEntry) =>
+    const allEntries = library.filter((entry: VocabularyEntry) =>
       lesson.categories.includes(entry.category)
     );
+    const batchSize = 25;
+    const batchCount = Math.max(1, Math.ceil(allEntries.length / batchSize));
+    const activeBatch = batchCursor % batchCount;
+    const entries = allEntries.slice(activeBatch * batchSize, (activeBatch + 1) * batchSize);
+    const nextBatch = () => {
+      const next = (activeBatch + 1) % batchCount;
+      localStorage.setItem(`opslite-word-batch-${lesson.id}`, String(next));
+      setBatchCursor(next);
+      setSelected(null);
+      scrollTo({ top: 0, behavior: 'smooth' });
+      notice(batchCount > 1 ? `已换成第 ${next + 1} 批新词。` : '这个主题目前只有这一批词。');
+    };
     return (
       <LessonDetail
         lesson={lesson}
         entries={entries}
+        totalEntries={allEntries.length}
+        activeBatch={activeBatch}
+        batchCount={batchCount}
         onOpenWord={setSelected}
         onAddEntry={addEntry}
         onAddPhrase={addPhrase}
         onAddAll={async () => {
           await Promise.all([
-            ...entries.map((entry: VocabularyEntry) =>
+            ...allEntries.map((entry: VocabularyEntry) =>
               saveVocabulary({
                 id: `library-${entry.id}`,
                 text: entry.term,
@@ -1546,15 +1618,7 @@ function Words({ words, library, reload, reloadVocabulary, notice, lessonId }: a
           await reload();
           notice('本主题词汇和常用句型已加入我的词句。');
         }}
-        onRefresh={async () => {
-          const refreshed = await refreshVocabularyContent();
-          await reloadVocabulary();
-          notice(
-            refreshed.updatedEntries
-              ? `已更新 ${refreshed.updatedEntries} 条词汇。`
-              : '词汇已是最新。'
-          );
-        }}
+        onNextBatch={nextBatch}
         notice={notice}
       >
         {selected && (
@@ -1621,23 +1685,7 @@ function Words({ words, library, reload, reloadVocabulary, notice, lessonId }: a
       ))}
       <div class="line academy-tools">
         <h2>词汇与主题</h2>
-        <button
-          onClick={async () => {
-            try {
-              const refreshed = await refreshVocabularyContent();
-              await reloadVocabulary();
-              notice(
-                refreshed.updatedEntries
-                  ? `已更新 ${refreshed.updatedEntries} 条词汇。`
-                  : '词汇已是最新。'
-              );
-            } catch (error) {
-              notice((error as Error).message);
-            }
-          }}
-        >
-          ↻ 更新
-        </button>
+        <button onClick={() => go('settings')}>管理离线词汇包</button>
       </div>
       <input
         aria-label="搜索词句"
@@ -1648,21 +1696,9 @@ function Words({ words, library, reload, reloadVocabulary, notice, lessonId }: a
       <div class="actions">
         <button onClick={() => setEditing(!editing)}>+ 添加词句</button>
         <button
-          onClick={async () => {
-            try {
-              const refreshed = await refreshVocabularyContent();
-              await reloadVocabulary();
-              notice(
-                refreshed.updatedEntries
-                  ? `已更新 ${refreshed.updatedEntries} 条词汇。`
-                  : '词汇已是最新。'
-              );
-            } catch (e) {
-              notice((e as Error).message);
-            }
-          }}
+          onClick={() => notice(`当前已启用 ${library.length} 条词汇；进入主题可点“换一批新词”。`)}
         >
-          ↻ 刷新词汇
+          查看词库数量
         </button>
       </div>
       {editing && (
@@ -1714,7 +1750,13 @@ function Words({ words, library, reload, reloadVocabulary, notice, lessonId }: a
                   <p>{entry.meaning}</p>
                 </div>
                 <div class="word-actions">
-                  <SpeakButton text={entry.term} label={entry.term} compact notify={notice} />
+                  <SpeakButton
+                    text={entry.term}
+                    label={entry.term}
+                    audio={entry.audio}
+                    compact
+                    notify={notice}
+                  />
                   <button aria-label={`查看 ${entry.term}`} onClick={() => setSelected(entry)}>
                     查看
                   </button>
@@ -1754,17 +1796,13 @@ function Words({ words, library, reload, reloadVocabulary, notice, lessonId }: a
               >
                 {item.favorite ? '★' : '☆'}
               </button>
-              <button
-                aria-label="标记已掌握"
-                onClick={async () => {
-                  await saveVocabulary({
-                    ...item,
-                    mastered: !item.mastered,
-                    nextReview: localDate(new Date(Date.now() + 14 * 86400000))
-                  });
-                  await reload();
-                }}
-              >
+              <button aria-label="不熟，尽快复习" onClick={() => reviewWord(item, 'again')}>
+                不熟
+              </button>
+              <button aria-label="模糊，稍后复习" onClick={() => reviewWord(item, 'hard')}>
+                模糊
+              </button>
+              <button aria-label="认识，延后复习" onClick={() => reviewWord(item, 'known')}>
                 认识
               </button>
               <button
@@ -1799,11 +1837,14 @@ function Words({ words, library, reload, reloadVocabulary, notice, lessonId }: a
 function LessonDetail({
   lesson,
   entries,
+  totalEntries,
+  activeBatch,
+  batchCount,
   onOpenWord,
   onAddEntry,
   onAddPhrase,
   onAddAll,
-  onRefresh,
+  onNextBatch,
   notice,
   children
 }: any) {
@@ -1816,12 +1857,12 @@ function LessonDetail({
           <h2>{lesson.title}</h2>
           <p>{lesson.titleEn}</p>
           <small>
-            {entries.length} 个核心词汇 · {lesson.phrases.length} 个常用句型
+            本主题 {totalEntries} 词 · 当前第 {activeBatch + 1}/{batchCount} 批
           </small>
         </div>
       </div>
-      <button class="refresh-lesson" onClick={onRefresh}>
-        ↻ 检查更新并刷新本主题词汇
+      <button class="refresh-lesson" onClick={onNextBatch} disabled={batchCount < 2}>
+        ↻ 换一批新词（每批 25 词）
       </button>
       <h2>核心词汇</h2>
       <div class="expression-list">
@@ -1833,7 +1874,13 @@ function LessonDetail({
               <small>{entry.phonetic}</small>
             </button>
             <div class="expression-actions">
-              <SpeakButton text={entry.term} label={entry.term} compact notify={notice} />
+              <SpeakButton
+                text={entry.term}
+                label={entry.term}
+                audio={entry.audio}
+                compact
+                notify={notice}
+              />
               <button aria-label={`加入 ${entry.term} 到词句`} onClick={() => onAddEntry(entry)}>
                 ＋
               </button>
@@ -1911,7 +1958,13 @@ function WordSheet({
         <div class="line phonetic">
           <span>{entry.phonetic}</span>
           <strong>{entry.meaning}</strong>
-          <SpeakButton text={entry.term} label={entry.term} compact notify={notice} />
+          <SpeakButton
+            text={entry.term}
+            label={entry.term}
+            audio={entry.audio}
+            compact
+            notify={notice}
+          />
         </div>
         <p class="spelling">拼读：{spell}</p>
         <div class="example-card">
@@ -1942,6 +1995,16 @@ function Settings({
 }) {
   const [updates, setUpdates] = useState<CatalogPack[]>([]);
   const [busy, setBusy] = useState(false);
+  const [vocabularyCatalog, setVocabularyCatalog] = useState<VocabularyCatalog | null>(null);
+  const [installedPacks, setInstalledPacks] = useState<string[]>([]);
+  useEffect(() => {
+    Promise.all([fetchOfflineVocabularyCatalog(), installedVocabularyPackIds()]).then(
+      ([catalog, installed]) => {
+        setVocabularyCatalog(catalog);
+        setInstalledPacks(installed);
+      }
+    );
+  }, []);
   const choose = (fn: (file: File) => Promise<void>) => {
     const input = document.createElement('input');
     input.type = 'file';
@@ -1969,7 +2032,7 @@ function Settings({
       <div class="cards">
         <article class="card">
           <h2>应用与内容</h2>
-          <p>应用版本 1.1.0 · 内容目录版本 1</p>
+          <p>应用版本 1.2.0 · 内容目录版本 1</p>
           <button onClick={update} disabled={busy}>
             {busy ? '检查中…' : '检查场景更新'}
           </button>
@@ -2006,6 +2069,45 @@ function Settings({
               </button>
             </div>
           ))}
+        </article>
+        <article class="card">
+          <h2>离线词汇与发音包</h2>
+          <p>APK 已包含全部 20000 词和 3000 个高频词标准美式发音；可随时启用或停用词汇包。</p>
+          <div class="pack-manager">
+            {vocabularyCatalog?.packs.map((pack) => {
+              const installed = installedPacks.includes(pack.id);
+              return (
+                <div class="line">
+                  <span>
+                    <strong>{pack.title}</strong>
+                    <small>
+                      {pack.entryCount} 词
+                      {pack.audioIncluded ? ` · ${pack.audioEntryCount} 个发音` : ''}
+                    </small>
+                  </span>
+                  <button
+                    disabled={busy}
+                    onClick={async () => {
+                      try {
+                        setBusy(true);
+                        if (installed) await uninstallOfflineVocabularyPack(pack.id);
+                        else await installOfflineVocabularyPacks([pack.id]);
+                        setInstalledPacks(await installedVocabularyPackIds());
+                        await onReload();
+                        notify(installed ? '词汇包已停用，内置文件仍保留。' : '词汇包已启用。');
+                      } catch (reason) {
+                        notify((reason as Error).message);
+                      } finally {
+                        setBusy(false);
+                      }
+                    }}
+                  >
+                    {installed ? '停用' : '启用'}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
         </article>
         <article class="card">
           <h2>数据备份</h2>

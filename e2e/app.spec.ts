@@ -1,6 +1,35 @@
 import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => {
+    if (!sessionStorage.getItem('show-onboarding-test'))
+      localStorage.setItem('opslite-onboarding-v2', 'complete');
+  });
+});
+
+test('installs a chosen offline pack and changes to a different vocabulary batch', async ({
+  page
+}) => {
+  await page.goto('/');
+  await page.evaluate(() => {
+    sessionStorage.setItem('show-onboarding-test', 'true');
+    localStorage.removeItem('opslite-onboarding-v2');
+  });
+  await page.reload();
+  await expect(page.getByRole('heading', { name: '选择你的英语词汇包' })).toBeVisible();
+  await page.getByRole('checkbox', { name: /核心基础 3000/ }).uncheck();
+  await page.getByRole('checkbox', { name: /能力进阶 5000/ }).uncheck();
+  await page.getByRole('button', { name: /安装所选 1 个词汇包并开始/ }).click();
+  await expect(page.getByRole('button', { name: '⌁ 课程', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '⌁ 课程', exact: true }).click();
+  await page.getByText('日常交流', { exact: true }).click();
+  const firstWord = page.locator('.expression-card strong').first();
+  const before = await firstWord.textContent();
+  await page.getByRole('button', { name: /换一批新词/ }).click();
+  await expect(firstWord).not.toHaveText(before ?? '');
+});
+
 test('loads 48 scenarios, filters, trains and persists', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByText('OpsLingo Lite')).toBeVisible();
@@ -119,7 +148,7 @@ test('offers offline voice setup and local shadowing feedback', async ({ page })
     .getByRole('button', { name: /影子跟读/ })
     .first()
     .click();
-  await expect(page.getByRole('button', { name: '下载/管理离线语音包' })).toBeVisible();
+  await expect(page.getByText(/核心发音包已随应用内置/)).toBeVisible();
   await page.getByRole('button', { name: '🎙 开始本地跟读判断' }).click();
   await expect(page.getByText('本地跟读匹配分')).toBeVisible();
   await expect(page.getByLabel('逐词匹配结果')).toBeVisible();
@@ -127,9 +156,9 @@ test('offers offline voice setup and local shadowing feedback', async ({ page })
 test('shows update controls, word details and bilingual playable dialogue', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: '⌁ 课程', exact: true }).click();
-  await expect(page.getByRole('button', { name: '↻ 刷新词汇' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '管理离线词汇包' })).toBeVisible();
   await page.getByText('日常交流', { exact: true }).click();
-  await expect(page.getByRole('button', { name: '↻ 检查更新并刷新本主题词汇' })).toBeVisible();
+  await expect(page.getByRole('button', { name: /换一批新词/ })).toBeVisible();
   await page
     .getByRole('button', { name: /conversation/ })
     .first()

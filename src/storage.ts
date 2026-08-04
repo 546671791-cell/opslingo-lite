@@ -117,6 +117,14 @@ async function fetchVocabularyCatalog() {
   return catalog;
 }
 
+export async function fetchOfflineVocabularyCatalog() {
+  const response = await fetch('./vocabulary/offline-catalog.json', { cache: 'force-cache' });
+  if (!response.ok) throw new Error('无法读取内置离线词汇目录。');
+  const catalog = (await response.json()) as VocabularyCatalog;
+  if (!Array.isArray(catalog.packs)) throw new Error('离线词汇目录格式无效。');
+  return catalog;
+}
+
 async function fetchVocabularyPack(entry: VocabularyCatalog['packs'][number]) {
   const response = await fetch(`./vocabulary/${entry.path.replace('./', '')}?v=${entry.version}`, {
     cache: 'no-store'
@@ -155,6 +163,55 @@ export async function refreshVocabularyContent() {
     updatedEntries += pack.entries.length;
   }
   return { updatedEntries, entries: await loadVocabularyContent() };
+}
+
+export async function installedVocabularyPackIds() {
+  return (await (await dbPromise).getAll('vocabularyPacks')).map((pack) => pack.id);
+}
+
+export async function installOfflineVocabularyPacks(
+  packIds: string[],
+  onProgress?: (completed: number, total: number, label: string) => void
+) {
+  const catalog = await fetchOfflineVocabularyCatalog();
+  const selected = catalog.packs.filter((pack) => packIds.includes(pack.id));
+  const total = selected.reduce(
+    (sum, pack) => sum + 1 + (pack.audioIncluded ? (pack.audioEntryCount ?? 0) : 0),
+    0
+  );
+  let completed = 0;
+  const db = await dbPromise;
+  for (const entry of selected) {
+    const pack = await fetchVocabularyPack(entry);
+    await db.put('vocabularyPacks', { ...pack, key: pack.id });
+    completed += 1;
+    onProgress?.(completed, total, `已安装 ${entry.title ?? entry.id}`);
+    const audioEntries = pack.entries.filter((item) => item.audio);
+    if (audioEntries.length && 'caches' in window) {
+      const cache = await caches.open('opslite-offline-audio-v1');
+      const queue = [...audioEntries];
+      const workers = Array.from({ length: 6 }, async () => {
+        while (queue.length) {
+          const item = queue.shift();
+          if (!item?.audio) continue;
+          const url = `${import.meta.env.BASE_URL}${item.audio}`;
+          if (!(await cache.match(url))) {
+            const response = await fetch(url, { cache: 'force-cache' });
+            if (response.ok) await cache.put(url, response.clone());
+          }
+          completed += 1;
+          if (completed % 20 === 0 || completed === total)
+            onProgress?.(completed, total, `正在准备本地发音 ${completed}/${total}`);
+        }
+      });
+      await Promise.all(workers);
+    }
+  }
+  return loadVocabularyContent();
+}
+
+export async function uninstallOfflineVocabularyPack(packId: string) {
+  await (await dbPromise).delete('vocabularyPacks', packId);
 }
 export async function sha256(text: string) {
   const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
@@ -257,7 +314,7 @@ export async function exportData(): Promise<ExportData> {
   const db = await dbPromise;
   return {
     formatVersion: 1,
-    appVersion: '1.0.0',
+    appVersion: '1.2.0',
     exportedAt: new Date().toISOString(),
     sessions: await db.getAll('practiceSessions'),
     vocabulary: await db.getAll('vocabularyItems'),

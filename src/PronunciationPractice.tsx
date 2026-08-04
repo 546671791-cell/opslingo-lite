@@ -6,12 +6,7 @@ import {
   microphoneErrorMessage
 } from './microphone';
 import { scoreLocalPronunciation, type LocalPronunciationResult } from './localPronunciation';
-import {
-  assessPronunciation,
-  hasOfflineEnglishVoice,
-  openOfflineVoiceInstaller,
-  speechApiConfigured
-} from './pronunciation';
+import { assessPronunciation, speechApiConfigured } from './pronunciation';
 import { startEnglishDictation, type RecognitionController } from './speechRecognition';
 import type { PronunciationAssessment, VocabularyEntry } from './types';
 
@@ -25,7 +20,6 @@ export function PronunciationPractice({ entry }: { entry: VocabularyEntry }) {
   const [localListening, setLocalListening] = useState(false);
   const [localStatus, setLocalStatus] = useState('点“开始本地跟读”，朗读上方英文。');
   const [localResult, setLocalResult] = useState<LocalPronunciationResult | null>(null);
-  const [offlineVoiceReady, setOfflineVoiceReady] = useState<boolean | null>(null);
   const recorder = useRef<MediaRecorder | null>(null);
   const stream = useRef<MediaStream | null>(null);
   const chunks = useRef<Blob[]>([]);
@@ -36,9 +30,6 @@ export function PronunciationPractice({ entry }: { entry: VocabularyEntry }) {
     stream.current = null;
   };
   useEffect(() => {
-    hasOfflineEnglishVoice()
-      .then(setOfflineVoiceReady)
-      .catch(() => setOfflineVoiceReady(false));
     return () => {
       stopTracks();
       recognition.current?.stop().catch(() => undefined);
@@ -138,28 +129,9 @@ export function PronunciationPractice({ entry }: { entry: VocabularyEntry }) {
   return (
     <section class="pronunciation" aria-label="发音练习">
       <h3>跟读与发音评分</h3>
-      <p class="muted">先用本机英语语音包听示范，再跟读；本地判断不会上传录音。</p>
+      <p class="muted">先听内置示范，再跟读；本地判断不会上传录音。</p>
       <div class="offline-voice-row">
-        <span>
-          {offlineVoiceReady === null
-            ? '正在检查离线英语语音包…'
-            : offlineVoiceReady
-              ? '✓ 已检测到本机英语语音'
-              : '尚未检测到本机英语语音'}
-        </span>
-        <button
-          onClick={async () => {
-            try {
-              setLocalStatus('正在打开 Android 语音数据安装页面…');
-              await openOfflineVoiceInstaller();
-              setOfflineVoiceReady(await hasOfflineEnglishVoice());
-            } catch (error) {
-              setLocalStatus((error as Error).message);
-            }
-          }}
-        >
-          下载/管理离线语音包
-        </button>
+        <span>✓ 核心发音包已随应用内置，无需跳转 Android 安装页面</span>
       </div>
       <button
         class={`local-shadow-button ${localListening ? 'listening' : ''}`}

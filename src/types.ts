@@ -119,6 +119,8 @@ export interface VocabularyItem {
   mastered: boolean;
   nextReview: string;
   createdAt: string;
+  reviewStage?: number;
+  lastReviewedAt?: string;
 }
 
 export type VocabularyLevel = '基础' | '进阶' | '商务';
@@ -133,10 +135,12 @@ export interface VocabularyEntry {
   example: string;
   exampleMeaning: string;
   tips: string[];
+  audio?: string;
 }
 
 export interface VocabularyPack {
   id: string;
+  title?: string;
   version: string;
   releasedAt: string;
   entries: VocabularyEntry[];
@@ -145,7 +149,16 @@ export interface VocabularyPack {
 export interface VocabularyCatalog {
   catalogVersion: number;
   releasedAt: string;
-  packs: { id: string; version: string; path: string; entryCount: number }[];
+  packs: {
+    id: string;
+    title?: string;
+    version: string;
+    path: string;
+    entryCount: number;
+    audioIncluded?: boolean;
+    audioEntryCount?: number;
+    estimatedBytes?: number;
+  }[];
 }
 
 export interface PronunciationWord {

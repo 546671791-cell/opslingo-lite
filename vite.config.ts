@@ -12,9 +12,9 @@ export default defineConfig({
       registerType: 'prompt',
       includeAssets: ['icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png'],
       manifest: {
-        name: '航旅英语 · OpsLingo Lite',
-        short_name: '航旅英语',
-        description: '离线航旅商务英语训练工具',
+        name: 'OpsLingo Lite · 离线英语',
+        short_name: 'OpsLingo',
+        description: '覆盖日常交流、美国生活、职场与进阶学习的离线英语训练工具',
         lang: 'zh-CN',
         start_url: '.',
         scope: '.',
@@ -28,8 +28,19 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,json}'],
+        globIgnores: ['vocabulary/packs/offline-*.json'],
         navigateFallback: 'index.html',
         runtimeCaching: [
+          {
+            urlPattern: /\/audio\/vocabulary\/.*\.m4a$/,
+            handler: 'CacheFirst',
+            options: { cacheName: 'opslite-offline-audio-v1', expiration: { maxEntries: 3200 } }
+          },
+          {
+            urlPattern: /\/vocabulary\/packs\/offline-.*\.json/,
+            handler: 'CacheFirst',
+            options: { cacheName: 'offline-vocabulary-packs', expiration: { maxEntries: 8 } }
+          },
           {
             urlPattern: /\/content\/(?:packs\/.*\.json)$/,
             handler: 'StaleWhileRevalidate',

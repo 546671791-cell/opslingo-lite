@@ -1,0 +1,56 @@
+{
+  "catalogVersion": 1,
+  "releasedAt": "2026-08-04T05:00:00.000Z",
+  "packs": [
+    {
+      "id": "offline-foundation",
+      "title": "核心基础 3000",
+      "version": "2.0.0",
+      "path": "./packs/offline-foundation-2.0.0.json",
+      "entryCount": 3000,
+      "audioIncluded": true,
+      "audioEntryCount": 3000,
+      "estimatedBytes": 32000000
+    },
+    {
+      "id": "offline-everyday",
+      "title": "生活交流 5000",
+      "version": "2.0.0",
+      "path": "./packs/offline-everyday-2.0.0.json",
+      "entryCount": 5000,
+      "audioIncluded": false,
+      "audioEntryCount": 0,
+      "estimatedBytes": 3250000
+    },
+    {
+      "id": "offline-intermediate",
+      "title": "能力进阶 5000",
+      "version": "2.0.0",
+      "path": "./packs/offline-intermediate-2.0.0.json",
+      "entryCount": 5000,
+      "audioIncluded": false,
+      "audioEntryCount": 0,
+      "estimatedBytes": 3250000
+    },
+    {
+      "id": "offline-advanced",
+      "title": "高阶表达 4000",
+      "version": "2.0.0",
+      "path": "./packs/offline-advanced-2.0.0.json",
+      "entryCount": 4000,
+      "audioIncluded": false,
+      "audioEntryCount": 0,
+      "estimatedBytes": 2600000
+    },
+    {
+      "id": "offline-academic",
+      "title": "学术与职场 3000",
+      "version": "2.0.0",
+      "path": "./packs/offline-academic-2.0.0.json",
+      "entryCount": 3000,
+      "audioIncluded": false,
+      "audioEntryCount": 0,
+      "estimatedBytes": 1950000
+    }
+  ]
+}
