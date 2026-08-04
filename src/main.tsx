@@ -1,5 +1,4 @@
 import { App as CapacitorApp } from '@capacitor/app';
-import { SpeechRecognition } from '@capacitor-community/speech-recognition';
 import { Capacitor } from '@capacitor/core';
 import { render } from 'preact';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
@@ -21,6 +20,7 @@ import {
   isMicrophonePermissionError,
   microphoneErrorMessage
 } from './microphone';
+import { startEnglishDictation, type RecognitionController } from './speechRecognition';
 import {
   ConversationEngine,
   effectiveSeconds,
@@ -629,15 +629,14 @@ function VoiceReplyButton({
   const [listening, setListening] = useState(false);
   const [recording, setRecording] = useState(false);
   const [audioUrl, setAudioUrl] = useState('');
+  const [voiceStatus, setVoiceStatus] = useState('点按后说英语，识别文字会自动进入回复框。');
   const recorder = useRef<MediaRecorder | null>(null);
   const stream = useRef<MediaStream | null>(null);
   const chunks = useRef<Blob[]>([]);
-  const browserRecognition = useRef<BrowserSpeechRecognition | null>(null);
+  const recognition = useRef<RecognitionController | null>(null);
   useEffect(
     () => () => {
-      SpeechRecognition.stop().catch(() => undefined);
-      SpeechRecognition.removeAllListeners().catch(() => undefined);
-      browserRecognition.current?.abort();
+      recognition.current?.stop().catch(() => undefined);
       stream.current?.getTracks().forEach((track) => track.stop());
       if (audioUrl) URL.revokeObjectURL(audioUrl);
     },
@@ -662,66 +661,13 @@ function VoiceReplyButton({
       stream.current?.getTracks().forEach((track) => track.stop());
       stream.current = null;
       setRecording(false);
+      setVoiceStatus('录音已完成。当前系统缺少文字识别服务，可以先回放检查。');
       notify('录音已完成，可以回放检查。此设备缺少系统转写服务，录音不会自动变成文字。');
     };
     nextRecorder.start();
     setRecording(true);
+    setVoiceStatus('正在录音。说完后点“停止并回放”。');
     notify('系统语音转写不可用，已切换为录音练习。说完后请点“停止并回放”。');
-  };
-  const startBrowserRecognition = () => {
-    const Recognition = browserSpeechRecognitionConstructor();
-    if (!Recognition) return false;
-    const recognition = new Recognition();
-    browserRecognition.current = recognition;
-    recognition.lang = 'en-US';
-    recognition.continuous = false;
-    recognition.interimResults = true;
-    recognition.maxAlternatives = 3;
-    recognition.onresult = (event) => {
-      const transcript = Array.from(event.results)
-        .map((result) => result[0]?.transcript ?? '')
-        .join(' ')
-        .trim();
-      if (transcript) onResult(transcript);
-    };
-    recognition.onerror = (event) => {
-      setListening(false);
-      notify(
-        event.error === 'not-allowed' || event.error === 'service-not-allowed'
-          ? microphoneErrorMessage(new Error('Permission denied'))
-          : event.error === 'no-speech'
-            ? '没有识别到清晰的英文，请靠近麦克风后重试。'
-            : `语音识别暂时不可用（${event.error}），请重试。`
-      );
-    };
-    recognition.onend = () => {
-      setListening(false);
-      browserRecognition.current = null;
-    };
-    recognition.start();
-    setListening(true);
-    notify('正在实时识别英文，说出的内容会自动写入输入框。');
-    return true;
-  };
-  const startNativeRecognition = async () => {
-    await ensureMicrophonePermission();
-    await SpeechRecognition.removeAllListeners();
-    await SpeechRecognition.addListener('partialResults', ({ matches }) => {
-      const transcript = matches[0]?.trim();
-      if (transcript) onResult(transcript);
-    });
-    await SpeechRecognition.addListener('listeningState', ({ status }) => {
-      if (status === 'stopped') setListening(false);
-    });
-    setListening(true);
-    notify('正在实时识别英文，说出的内容会自动写入输入框。');
-    await SpeechRecognition.start({
-      language: 'en-US',
-      maxResults: 3,
-      prompt: '请用英语说出回复',
-      partialResults: true,
-      popup: false
-    });
   };
   const toggle = async () => {
     if (recording) {
@@ -729,22 +675,34 @@ function VoiceReplyButton({
       return;
     }
     if (listening) {
-      if (Capacitor.isNativePlatform()) {
-        await SpeechRecognition.stop();
-        await SpeechRecognition.removeAllListeners();
-      } else {
-        browserRecognition.current?.stop();
-      }
+      await recognition.current?.stop();
+      recognition.current = null;
       setListening(false);
       return;
     }
     try {
-      if (Capacitor.isNativePlatform()) await startNativeRecognition();
-      else if (!startBrowserRecognition()) await startRecording();
+      setVoiceStatus('正在启动麦克风…');
+      recognition.current = await startEnglishDictation({
+        onResult: (text) => {
+          onResult(text);
+          setVoiceStatus(`已写入回复框：${text}`);
+        },
+        onStatus: setVoiceStatus,
+        onError: (error) => {
+          const message = microphoneErrorMessage(error);
+          setListening(false);
+          setVoiceStatus(message);
+          notify(message);
+        },
+        onEnd: () => setListening(false)
+      });
+      setListening(true);
     } catch (error) {
       setListening(false);
       if (isMicrophonePermissionError(error)) {
-        notify(microphoneErrorMessage(error));
+        const message = microphoneErrorMessage(error);
+        setVoiceStatus(message);
+        notify(message);
         return;
       }
       try {
@@ -763,6 +721,9 @@ function VoiceReplyButton({
       >
         {recording ? '■ 停止并回放' : listening ? '■ 正在实时转写，点此停止' : '🎙 用英语说出回复'}
       </button>
+      <p class="voice-status" role="status">
+        {voiceStatus}
+      </p>
       {audioUrl && (
         <div class="voice-playback">
           <span>本次录音</span>
@@ -772,30 +733,6 @@ function VoiceReplyButton({
       )}
     </>
   );
-}
-
-type BrowserSpeechRecognitionEvent = {
-  results: ArrayLike<ArrayLike<{ transcript: string }>>;
-};
-type BrowserSpeechRecognition = {
-  lang: string;
-  continuous: boolean;
-  interimResults: boolean;
-  maxAlternatives: number;
-  onresult: ((event: BrowserSpeechRecognitionEvent) => void) | null;
-  onerror: ((event: { error: string }) => void) | null;
-  onend: (() => void) | null;
-  start: () => void;
-  stop: () => void;
-  abort: () => void;
-};
-type BrowserSpeechRecognitionConstructor = new () => BrowserSpeechRecognition;
-function browserSpeechRecognitionConstructor() {
-  const speechWindow = window as typeof window & {
-    SpeechRecognition?: BrowserSpeechRecognitionConstructor;
-    webkitSpeechRecognition?: BrowserSpeechRecognitionConstructor;
-  };
-  return speechWindow.SpeechRecognition ?? speechWindow.webkitSpeechRecognition;
 }
 function Training({
   scenario,

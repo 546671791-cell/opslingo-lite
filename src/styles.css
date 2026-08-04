@@ -549,6 +549,13 @@ blockquote {
   color: #a32222;
   background: #ffe9e9;
 }
+.voice-status {
+  min-height: 1.5em;
+  margin: -6px 2px 0;
+  color: #52647e;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
 .voice-playback {
   display: grid;
   gap: 6px;
@@ -1177,6 +1184,76 @@ button.expression-main {
 .pronunciation p {
   margin: 0;
 }
+.offline-voice-row {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 14px;
+  background: #eef5ff;
+}
+.offline-voice-row button {
+  justify-self: start;
+  color: #1769e0;
+  background: #fff;
+}
+.local-shadow-button {
+  width: 100%;
+  min-height: 50px;
+  color: #fff;
+  background: #1769e0;
+  font-weight: 700;
+}
+.local-shadow-button.listening {
+  background: #a83c3c;
+}
+.local-status {
+  min-height: 1.5em;
+}
+.local-pronunciation-result {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid #b9d5fa;
+  border-radius: 16px;
+  background: #f2f7ff;
+}
+.local-score {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.local-score strong {
+  color: #1769e0;
+  font-size: 2.2rem;
+}
+.local-word-feedback {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.local-word-feedback span {
+  padding: 5px 8px;
+  border-radius: 8px;
+  background: #dff4e8;
+  color: #17613d;
+}
+.local-word-feedback span.missed {
+  background: #ffe3e3;
+  color: #9a2929;
+  text-decoration: underline;
+}
+.cloud-assessment {
+  border-top: 1px solid #dce4ef;
+  padding-top: 10px;
+}
+.cloud-assessment summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  color: #3d5678;
+  font-weight: 700;
+}
 .inline-warning {
   padding: 8px 10px;
   border-radius: 10px;
@@ -1370,6 +1447,32 @@ button.expression-main {
   .inline-warning {
     color: #ffe1a4;
     background: #513d10;
+  }
+  .voice-status,
+  .local-status,
+  .cloud-assessment summary {
+    color: #c5d1e2;
+  }
+  .offline-voice-row,
+  .local-pronunciation-result {
+    color: #e6ecf8;
+    border-color: #39516f;
+    background: #1b2c43;
+  }
+  .offline-voice-row button {
+    color: #cfe2ff;
+    background: #263b58;
+  }
+  .local-word-feedback span {
+    color: #c9f4dc;
+    background: #1d5137;
+  }
+  .local-word-feedback span.missed {
+    color: #ffd3d3;
+    background: #632c32;
+  }
+  .cloud-assessment {
+    border-color: #314158;
   }
   .level-switcher button,
   .method-switcher button,

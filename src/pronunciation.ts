@@ -17,6 +17,19 @@ export async function stopEnglish() {
   if ('speechSynthesis' in window) window.speechSynthesis.cancel();
 }
 
+export async function openOfflineVoiceInstaller() {
+  if (!Capacitor.isNativePlatform()) {
+    throw new Error('离线语音包由 Android 系统管理，请在 Android 应用中使用此功能。');
+  }
+  await TextToSpeech.openInstall();
+}
+
+export async function hasOfflineEnglishVoice() {
+  if (!Capacitor.isNativePlatform()) return false;
+  const { voices } = await TextToSpeech.getSupportedVoices();
+  return voices.some((voice) => voice.localService && voice.lang.toLowerCase().startsWith('en'));
+}
+
 export async function speakEnglish(text: string, rate = 0.82) {
   await stopEnglish();
   if (Capacitor.isNativePlatform()) {

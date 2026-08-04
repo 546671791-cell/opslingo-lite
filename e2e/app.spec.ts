@@ -89,6 +89,41 @@ test('writes live English speech recognition into the reply box', async ({ page 
   await page.getByRole('button', { name: /用英语说出回复/ }).click();
   await expect(page.getByPlaceholder('输入英文回复…')).toHaveValue('Could I get the check please?');
 });
+test('offers offline voice setup and local shadowing feedback', async ({ page }) => {
+  await page.addInitScript(() => {
+    class MockSpeechRecognition {
+      lang = '';
+      continuous = false;
+      interimResults = false;
+      maxAlternatives = 1;
+      onresult: ((event: unknown) => void) | null = null;
+      onerror: ((event: unknown) => void) | null = null;
+      onend: (() => void) | null = null;
+      start() {
+        window.setTimeout(() => {
+          this.onresult?.({ results: [[{ transcript: 'Could I get the check please' }]] });
+          this.onend?.();
+        }, 20);
+      }
+      stop() {
+        this.onend?.();
+      }
+    }
+    (window as any).SpeechRecognition = MockSpeechRecognition;
+    (window as any).webkitSpeechRecognition = MockSpeechRecognition;
+  });
+  await page.goto('/');
+  await page.getByRole('button', { name: '⌁ 课程', exact: true }).click();
+  await page.getByRole('button', { name: /在美国餐厅点餐/ }).click();
+  await page
+    .getByRole('button', { name: /影子跟读/ })
+    .first()
+    .click();
+  await expect(page.getByRole('button', { name: '下载/管理离线语音包' })).toBeVisible();
+  await page.getByRole('button', { name: '🎙 开始本地跟读判断' }).click();
+  await expect(page.getByText('本地跟读匹配分')).toBeVisible();
+  await expect(page.getByLabel('逐词匹配结果')).toBeVisible();
+});
 test('shows update controls, word details and bilingual playable dialogue', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: '⌁ 课程', exact: true }).click();
