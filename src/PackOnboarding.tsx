@@ -1,10 +1,15 @@
 import { useEffect, useState } from 'preact/hooks';
 import { Capacitor } from '@capacitor/core';
-import { fetchOfflineVocabularyCatalog, installOfflineVocabularyPacks } from './storage';
+import { naturalSpeechConfigured, prefetchNaturalEnglish } from './pronunciation';
+import {
+  fetchOfflineVocabularyCatalog,
+  installOfflineVocabularyPacks,
+  vocabularyEntriesForPacks
+} from './storage';
 import type { VocabularyCatalog } from './types';
 
 const descriptions: Record<string, string> = {
-  'offline-foundation': '最高频基础表达，含 3000 个统一标准美式发音，推荐所有学习者安装。',
+  'offline-foundation': '最高频基础表达，含 3000 个离线参考发音，推荐所有学习者安装。',
   'offline-everyday': '覆盖吃喝、购物、交通、健康、社交等真实生活交流。',
   'offline-intermediate': '适合 B1–B2 的常见阅读、听说与观点表达。',
   'offline-advanced': '扩展较难词汇与复杂表达，适合 C1–C2 进阶。',
@@ -19,6 +24,7 @@ export function PackOnboarding({ onComplete }: { onComplete: () => Promise<void>
   const [progress, setProgress] = useState({ completed: 0, total: 1, label: '正在读取内置内容…' });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [downloadNaturalVoice, setDownloadNaturalVoice] = useState(naturalSpeechConfigured);
 
   useEffect(() => {
     fetchOfflineVocabularyCatalog()
@@ -40,6 +46,19 @@ export function PackOnboarding({ onComplete }: { onComplete: () => Promise<void>
       await installOfflineVocabularyPacks([...selected], (completed, total, label) =>
         setProgress({ completed, total: Math.max(1, total), label })
       );
+      if (downloadNaturalVoice && naturalSpeechConfigured) {
+        const entries = await vocabularyEntriesForPacks([...selected]);
+        const result = await prefetchNaturalEnglish(
+          entries.map((entry) => entry.term),
+          (completed, total) =>
+            setProgress({
+              completed,
+              total: Math.max(1, total),
+              label: `正在下载自然美式单词发音 ${completed}/${total}`
+            })
+        );
+        if (result.failed) setError(`${result.failed} 个单词语音未完成，稍后可在设置中继续下载。`);
+      }
       localStorage.setItem('opslite-onboarding-v2', 'complete');
       await onComplete();
     } catch (reason) {
@@ -56,7 +75,7 @@ export function PackOnboarding({ onComplete }: { onComplete: () => Promise<void>
         <h1 id="pack-title">选择你的英语词汇包</h1>
         <p class="muted">
           {Capacitor.isNativePlatform()
-            ? '所有内容已装进 APK；这里仅建立本机词库和音频索引，不会联网下载。'
+            ? '词汇和离线参考音已装进 APK；自然美式语音包可选下载到本机。'
             : '选择后会下载并缓存到当前设备；完成后可离线使用。'}
         </p>
         <div class="pack-options">
@@ -73,12 +92,31 @@ export function PackOnboarding({ onComplete }: { onComplete: () => Promise<void>
                 <small>{descriptions[pack.id]}</small>
                 <em>
                   {pack.entryCount} 词
-                  {pack.audioIncluded ? ` · ${pack.audioEntryCount} 个内置发音` : ' · 系统朗读'}
+                  {pack.audioIncluded
+                    ? ` · ${pack.audioEntryCount} 个离线参考音`
+                    : ' · 可下载自然美式发音'}
                 </em>
               </span>
             </label>
           ))}
         </div>
+        <label class={`pack-option ${downloadNaturalVoice ? 'selected' : ''}`}>
+          <input
+            type="checkbox"
+            checked={downloadNaturalVoice}
+            onChange={() => setDownloadNaturalVoice((value) => !value)}
+            disabled={busy || !naturalSpeechConfigured}
+          />
+          <span>
+            <strong>下载自然美式单词语音</strong>
+            <small>
+              {naturalSpeechConfigured
+                ? '使用 Azure 神经语音预先下载所选词汇；下载后播放无需联网或等待。'
+                : '完成 Azure Speech 配置后可启用；目前仍可使用内置离线参考音。'}
+            </small>
+            <em>可随时在设置继续下载或重试</em>
+          </span>
+        </label>
         {busy && (
           <div class="pack-progress" role="status">
             <progress value={progress.completed} max={progress.total} />

@@ -45,7 +45,7 @@ npm run android:debug
 
 ## Azure Speech 自然美式朗读与发音评测（可选）
 
-离线时，应用可使用内置参考音和系统朗读；接入 Azure 后，所有单词、例句、对话的播放按钮会优先使用 `en-US-JennyNeural` 的美式神经语音（`chat` 风格）。首次内容更新及进入课程前，应用会预取句子与对话语音并持久缓存在当前设备，之后点击播放无需再等云端合成。发音评测同样使用 Azure Speech 与本仓库的无状态 Azure Function 代理：订阅密钥绝不会写进 PWA、APK、仓库或 GitHub Pages。Azure 的短音频 REST 评测支持参考文本、准确度、流利度、完整度与韵律等字段；本应用把浏览器录音转为 16 kHz PCM WAV 后再上传。
+离线时，应用可使用内置参考音和系统朗读；接入 Azure 后，所有单词、例句、对话的播放按钮会优先使用 `en-US-JennyNeural` 的美式神经语音（`chat` 风格）。首次内容更新及进入课程前，应用会预取句子与对话语音并持久缓存在当前设备；首次选择词汇包或在设置中点“下载自然发音”可将该包所有单词音频下载到本机。缓存命中后播放无需再等云端合成，且可离线使用。发音评测同样使用 Azure Speech 与本仓库的无状态 Azure Function 代理：订阅密钥绝不会写进 PWA、APK、仓库或 GitHub Pages。Azure 的短音频 REST 评测支持参考文本、准确度、流利度、完整度与韵律等字段；本应用把浏览器录音转为 16 kHz PCM WAV 后再上传。
 
 1. 在 Azure 创建 Speech 资源，记录区域和访问密钥。
 2. 在 Function App 的 Configuration 中设置 `AZURE_SPEECH_KEY`、`AZURE_SPEECH_REGION` 与 `ALLOWED_ORIGINS`。后者至少应包含 `https://546671791-cell.github.io,http://localhost,https://localhost`。

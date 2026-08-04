@@ -157,7 +157,7 @@ export async function prefetchNaturalEnglish(
         failed += 1;
       } finally {
         completed += 1;
-        onProgress?.(completed, total);
+        if (completed % 10 === 0 || completed === total) onProgress?.(completed, total);
       }
     }
   });

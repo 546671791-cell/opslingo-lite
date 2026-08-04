@@ -169,6 +169,13 @@ export async function installedVocabularyPackIds() {
   return (await (await dbPromise).getAll('vocabularyPacks')).map((pack) => pack.id);
 }
 
+export async function vocabularyEntriesForPacks(packIds: string[]) {
+  const selected = new Set(packIds);
+  return (await (await dbPromise).getAll('vocabularyPacks'))
+    .filter((pack) => selected.has(pack.id))
+    .flatMap((pack) => pack.entries);
+}
+
 export async function installOfflineVocabularyPacks(
   packIds: string[],
   onProgress?: (completed: number, total: number, label: string) => void

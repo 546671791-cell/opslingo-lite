@@ -52,7 +52,8 @@ import {
   saveVocabulary,
   sessions,
   uninstallOfflineVocabularyPack,
-  vocabulary
+  vocabulary,
+  vocabularyEntriesForPacks
 } from './storage';
 import {
   naturalSpeechConfigured,
@@ -162,6 +163,9 @@ const coreSpeechTexts = (scenarios: Scenario[]) =>
       'Hi there. How can I help you today?'
     ])
   ]);
+
+const naturalVoicePackKey = (pack: { id: string; version: string }) =>
+  `opslite-natural-voice-pack-${pack.id}-${pack.version}`;
 
 function App() {
   const [onboarded, setOnboarded] = useState(
@@ -2092,11 +2096,20 @@ function Settings({
   const [busy, setBusy] = useState(false);
   const [vocabularyCatalog, setVocabularyCatalog] = useState<VocabularyCatalog | null>(null);
   const [installedPacks, setInstalledPacks] = useState<string[]>([]);
+  const [naturalVoicePacks, setNaturalVoicePacks] = useState<string[]>([]);
+  const [voiceProgress, setVoiceProgress] = useState<{ completed: number; total: number } | null>(
+    null
+  );
   useEffect(() => {
     Promise.all([fetchOfflineVocabularyCatalog(), installedVocabularyPackIds()]).then(
       ([catalog, installed]) => {
         setVocabularyCatalog(catalog);
         setInstalledPacks(installed);
+        setNaturalVoicePacks(
+          catalog.packs
+            .filter((pack) => localStorage.getItem(naturalVoicePackKey(pack)) === 'complete')
+            .map((pack) => pack.id)
+        );
       }
     );
   }, []);
@@ -2121,13 +2134,41 @@ function Settings({
       setBusy(false);
     }
   };
+  const downloadNaturalVoicePack = async (pack: VocabularyCatalog['packs'][number]) => {
+    if (!naturalSpeechConfigured) {
+      notify('自然美式语音尚未配置；完成 Azure Function 配置后即可下载。');
+      return;
+    }
+    try {
+      setBusy(true);
+      setVoiceProgress({ completed: 0, total: pack.entryCount });
+      const entries = await vocabularyEntriesForPacks([pack.id]);
+      const result = await prefetchNaturalEnglish(
+        entries.map((entry) => entry.term),
+        (completed, total) => setVoiceProgress({ completed, total })
+      );
+      if (result.failed) {
+        localStorage.removeItem(naturalVoicePackKey(pack));
+        notify(`${result.failed} 个单词未下载成功，保留已完成部分；可点“继续下载”。`);
+      } else {
+        localStorage.setItem(naturalVoicePackKey(pack), 'complete');
+        setNaturalVoicePacks((current) => [...new Set([...current, pack.id])]);
+        notify(`${pack.title} 的 ${result.total} 个自然美式发音已下载到本机。`);
+      }
+    } catch (reason) {
+      notify((reason as Error).message);
+    } finally {
+      setVoiceProgress(null);
+      setBusy(false);
+    }
+  };
   return (
     <section>
       <Header title="设置" back />
       <div class="cards">
         <article class="card">
           <h2>应用与内容</h2>
-          <p>应用版本 1.2.0 · 内容目录版本 1</p>
+          <p>应用版本 1.2.4 · 内容目录版本 1</p>
           <button onClick={update} disabled={busy}>
             {busy ? '检查中…' : '检查场景更新'}
           </button>
@@ -2167,7 +2208,10 @@ function Settings({
         </article>
         <article class="card">
           <h2>离线词汇与发音包</h2>
-          <p>APK 已包含全部 20000 词和 3000 个高频词标准美式发音；可随时启用或停用词汇包。</p>
+          <p>
+            APK 已包含全部 20000 词与 3000 个离线参考音。连接 Azure
+            后，可按词汇包预下载自然美式发音；缓存后离线可播。
+          </p>
           <div class="pack-manager">
             {vocabularyCatalog?.packs.map((pack) => {
               const installed = installedPacks.includes(pack.id);
@@ -2177,28 +2221,41 @@ function Settings({
                     <strong>{pack.title}</strong>
                     <small>
                       {pack.entryCount} 词
-                      {pack.audioIncluded ? ` · ${pack.audioEntryCount} 个发音` : ''}
+                      {pack.audioIncluded ? ` · ${pack.audioEntryCount} 个离线参考音` : ''}
+                      {naturalVoicePacks.includes(pack.id) ? ' · 自然语音已下载' : ''}
                     </small>
                   </span>
-                  <button
-                    disabled={busy}
-                    onClick={async () => {
-                      try {
-                        setBusy(true);
-                        if (installed) await uninstallOfflineVocabularyPack(pack.id);
-                        else await installOfflineVocabularyPacks([pack.id]);
-                        setInstalledPacks(await installedVocabularyPackIds());
-                        await onReload();
-                        notify(installed ? '词汇包已停用，内置文件仍保留。' : '词汇包已启用。');
-                      } catch (reason) {
-                        notify((reason as Error).message);
-                      } finally {
-                        setBusy(false);
-                      }
-                    }}
-                  >
-                    {installed ? '停用' : '启用'}
-                  </button>
+                  <div class="pack-actions">
+                    <button
+                      disabled={busy}
+                      onClick={async () => {
+                        try {
+                          setBusy(true);
+                          if (installed) await uninstallOfflineVocabularyPack(pack.id);
+                          else await installOfflineVocabularyPacks([pack.id]);
+                          setInstalledPacks(await installedVocabularyPackIds());
+                          await onReload();
+                          notify(installed ? '词汇包已停用，内置文件仍保留。' : '词汇包已启用。');
+                        } catch (reason) {
+                          notify((reason as Error).message);
+                        } finally {
+                          setBusy(false);
+                        }
+                      }}
+                    >
+                      {installed ? '停用' : '启用'}
+                    </button>
+                    <button
+                      disabled={busy || !installed || !naturalSpeechConfigured}
+                      onClick={() => downloadNaturalVoicePack(pack)}
+                    >
+                      {voiceProgress
+                        ? `下载 ${voiceProgress.completed}/${voiceProgress.total}`
+                        : naturalVoicePacks.includes(pack.id)
+                          ? '重新下载'
+                          : '下载自然发音'}
+                    </button>
+                  </div>
                 </div>
               );
             })}
