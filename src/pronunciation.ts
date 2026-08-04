@@ -1,5 +1,5 @@
 import { TextToSpeech } from '@capacitor-community/text-to-speech';
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, registerPlugin } from '@capacitor/core';
 import { blobToBase64 } from './audio';
 import type { PronunciationAssessment } from './types';
 
@@ -8,6 +8,42 @@ const configuredEndpoint = import.meta.env.VITE_SPEECH_API_URL?.trim();
 export const speechApiConfigured = Boolean(configuredEndpoint);
 /** Azure Neural is used for every visible English play button when this endpoint is configured. */
 export const naturalSpeechConfigured = Boolean(configuredEndpoint);
+
+export type SpeechPlaybackMode = 'auto' | 'online' | 'offline-neural';
+const speechPlaybackModeKey = 'opslite-speech-playback-mode';
+
+interface OfflineNeuralSpeechPlugin {
+  getStatus(): Promise<{ available: boolean; engine: string }>;
+  speak(options: { text: string; speed?: number }): Promise<void>;
+  stop(): Promise<void>;
+}
+
+const OfflineNeuralSpeech = registerPlugin<OfflineNeuralSpeechPlugin>('OfflineNeuralSpeech');
+
+export function speechPlaybackMode(): SpeechPlaybackMode {
+  const saved = localStorage.getItem(speechPlaybackModeKey);
+  return saved === 'online' || saved === 'offline-neural' ? saved : 'auto';
+}
+
+export function setSpeechPlaybackMode(mode: SpeechPlaybackMode) {
+  localStorage.setItem(speechPlaybackModeKey, mode);
+}
+
+export async function offlineNeuralSpeechAvailable() {
+  if (!Capacitor.isNativePlatform()) return false;
+  try {
+    return (await OfflineNeuralSpeech.getStatus()).available;
+  } catch {
+    return false;
+  }
+}
+
+export async function speakOfflineNeuralEnglish(text: string, rate = 0.82) {
+  if (!Capacitor.isNativePlatform()) throw new Error('离线神经语音仅包含在 Android APK 中。');
+  const status = await OfflineNeuralSpeech.getStatus();
+  if (!status.available) throw new Error('此 APK 尚未包含离线神经语音包。');
+  await OfflineNeuralSpeech.speak({ text, speed: Math.max(0.7, Math.min(1.3, rate / 0.82)) });
+}
 
 const naturalSpeechCache = new Map<string, Blob>();
 const maxNaturalSpeechCacheEntries = 80;
@@ -18,6 +54,7 @@ const speechTimeout = (text: string) => Math.min(20_000, Math.max(4_000, text.le
 
 export async function stopEnglish() {
   if (Capacitor.isNativePlatform()) {
+    await OfflineNeuralSpeech.stop().catch(() => undefined);
     await TextToSpeech.stop();
     return;
   }

@@ -6,3 +6,7 @@ test-results/
 .DS_Store
 .env
 azure-function/local.settings.json
+android/.offline-tts-cache/
+android/app/src/main/jniLibs/
+android/app/src/main/assets/kokoro-en-v0_19/
+android/app/src/main/java/com/k2fsa/sherpa/onnx/Tts.kt

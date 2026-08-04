@@ -43,6 +43,8 @@ npm run android:debug
 
 生成文件为 `android/app/build/outputs/apk/debug/app-debug.apk`。它由调试密钥签名，适合本机安装测试，不适合发布到应用商店。推送 `main` 也会运行 **Android Debug APK** 工作流，产物可在该次 Actions 的 Artifacts 中下载。
 
+Android 构建会一次性打包约 439 MB 的离线 Kokoro 美式神经语音模型、声音数据与英文发音规则，因此首次构建需要联网下载模型，但安装完成后所有英文播放均可断网使用，不会把文本或录音上传。设置中可选择“自动保障”“在线高质量（授权服务）”或“离线神经美式”。
+
 ## Azure Speech 自然美式朗读与发音评测（可选）
 
 离线时，应用可使用内置参考音和系统朗读；接入 Azure 后，所有单词、例句、对话的播放按钮会优先使用 `en-US-JennyNeural` 的美式神经语音（`chat` 风格）。首次内容更新及进入课程前，应用会预取句子与对话语音并持久缓存在当前设备；首次选择词汇包或在设置中点“下载自然发音”可将该包所有单词音频下载到本机。缓存命中后播放无需再等云端合成，且可离线使用。发音评测同样使用 Azure Speech 与本仓库的无状态 Azure Function 代理：订阅密钥绝不会写进 PWA、APK、仓库或 GitHub Pages。Azure 的短音频 REST 评测支持参考文本、准确度、流利度、完整度与韵律等字段；本应用把浏览器录音转为 16 kHz PCM WAV 后再上传。

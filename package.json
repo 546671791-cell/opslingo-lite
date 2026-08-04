@@ -1,6 +1,6 @@
 {
   "name": "opslite-pwa",
-  "version": "1.2.4",
+  "version": "1.3.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -19,7 +19,8 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
-    "android:sync": "npm run build && npx cap sync android",
+    "prepare:offline-neural-tts": "tsx scripts/prepare-offline-neural-tts.ts",
+    "android:sync": "npm run build && npm run prepare:offline-neural-tts && npx cap sync android",
     "android:debug": "npm run android:sync && cd android && ./gradlew assembleDebug",
     "quality": "npm run format:check && npm run lint && npm run typecheck && npm run test:coverage && npm run build && npm run test:e2e"
   },

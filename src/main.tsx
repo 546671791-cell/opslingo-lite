@@ -57,10 +57,15 @@ import {
 } from './storage';
 import {
   naturalSpeechConfigured,
+  offlineNeuralSpeechAvailable,
   prefetchNaturalEnglish,
+  setSpeechPlaybackMode,
+  speakOfflineNeuralEnglish,
   speakEnglish,
+  speechPlaybackMode,
   stopEnglish,
-  synthesizeNaturalEnglish
+  synthesizeNaturalEnglish,
+  type SpeechPlaybackMode
 } from './pronunciation';
 import type {
   CatalogPack,
@@ -196,7 +201,7 @@ function App() {
     loadLocalContent()
       .then((loaded) => {
         setScenarios(loaded);
-        if (naturalSpeechConfigured) {
+        if (naturalSpeechConfigured && speechPlaybackMode() !== 'offline-neural') {
           void prefetchNaturalEnglish(coreSpeechTexts(loaded), (completed, total) =>
             setSpeechPreparation({ completed, total })
           ).then(() => setSpeechPreparation(null));
@@ -1218,7 +1223,8 @@ function SpeakButton({
     setPlaying(true);
     let objectUrl: string | null = null;
     try {
-      if (naturalSpeechConfigured) {
+      const mode = speechPlaybackMode();
+      if (naturalSpeechConfigured && mode !== 'offline-neural') {
         const naturalAudio = await synthesizeNaturalEnglish(text);
         if (requestId !== playRequest.current) return;
         objectUrl = URL.createObjectURL(naturalAudio);
@@ -1230,6 +1236,9 @@ function SpeakButton({
           nextPlayer.onpause = () => resolve();
           nextPlayer.onerror = () => reject(new Error('自然美式语音未能播放。'));
         });
+      } else if (await offlineNeuralSpeechAvailable()) {
+        if (requestId !== playRequest.current) return;
+        await speakOfflineNeuralEnglish(text, rate);
       } else if (audio) {
         const nextPlayer = new Audio(`${import.meta.env.BASE_URL}${audio}`);
         player.current = nextPlayer;
@@ -1244,17 +1253,26 @@ function SpeakButton({
         await speakEnglish(text, rate);
       }
     } catch (error) {
+      const mode = speechPlaybackMode();
       if (audio) {
         try {
           await speakEnglish(text, rate);
-          if (naturalSpeechConfigured) notify('自然美式语音暂时不可用，已切换为离线参考朗读。');
+          if (naturalSpeechConfigured && mode !== 'offline-neural') {
+            notify('在线语音暂时不可用，已切换为离线参考朗读。');
+          } else if (mode === 'offline-neural') {
+            notify('离线神经语音暂时不可用，已切换为离线参考朗读。');
+          }
         } catch {
           notify((error as Error).message);
         }
       } else {
         try {
           await speakEnglish(text, rate);
-          if (naturalSpeechConfigured) notify('自然美式语音暂时不可用，已切换为系统朗读。');
+          if (naturalSpeechConfigured && mode !== 'offline-neural') {
+            notify('在线语音暂时不可用，已切换为系统朗读。');
+          } else if (mode === 'offline-neural') {
+            notify('离线神经语音暂时不可用，已切换为系统朗读。');
+          }
         } catch {
           notify((error as Error).message);
         }
@@ -2097,6 +2115,8 @@ function Settings({
   const [vocabularyCatalog, setVocabularyCatalog] = useState<VocabularyCatalog | null>(null);
   const [installedPacks, setInstalledPacks] = useState<string[]>([]);
   const [naturalVoicePacks, setNaturalVoicePacks] = useState<string[]>([]);
+  const [speechMode, setSpeechMode] = useState<SpeechPlaybackMode>(speechPlaybackMode());
+  const [offlineNeuralReady, setOfflineNeuralReady] = useState(false);
   const [voiceProgress, setVoiceProgress] = useState<{ completed: number; total: number } | null>(
     null
   );
@@ -2112,6 +2132,9 @@ function Settings({
         );
       }
     );
+  }, []);
+  useEffect(() => {
+    offlineNeuralSpeechAvailable().then(setOfflineNeuralReady);
   }, []);
   const choose = (fn: (file: File) => Promise<void>) => {
     const input = document.createElement('input');
@@ -2207,10 +2230,45 @@ function Settings({
           ))}
         </article>
         <article class="card">
+          <h2>朗读方式</h2>
+          <p>
+            在线时可选授权的高质量美式语音；Android APK 内置离线神经美式语音，离线时不上传文本。
+          </p>
+          <label class="field-label" for="speech-mode">
+            播放优先级
+          </label>
+          <select
+            id="speech-mode"
+            value={speechMode}
+            onChange={(event) => {
+              const next = (event.currentTarget as HTMLSelectElement).value as SpeechPlaybackMode;
+              setSpeechPlaybackMode(next);
+              setSpeechMode(next);
+              notify(
+                next === 'offline-neural'
+                  ? '已切换到离线神经美式语音。'
+                  : next === 'online'
+                    ? '已切换到在线高质量语音优先。'
+                    : '已切换到自动保障模式。'
+              );
+            }}
+          >
+            <option value="auto">自动保障（在线优先，离线神经兜底）</option>
+            <option value="online">在线高质量（授权服务）</option>
+            <option value="offline-neural">离线神经美式（APK 内置）</option>
+          </select>
+          <small>
+            {offlineNeuralReady
+              ? '离线神经语音已在本 APK 中，可断网播放。'
+              : '当前网页或旧版 APK 不含离线神经语音；仍可使用本机参考音。'}
+          </small>
+        </article>
+        <article class="card">
           <h2>离线词汇与发音包</h2>
           <p>
-            APK 已包含全部 20000 词与 3000 个离线参考音。连接 Azure
-            后，可按词汇包预下载自然美式发音；缓存后离线可播。
+            APK 已包含全部 20000 词与 3000
+            个离线参考音。离线神经模型会为所有英文词汇和句子即时生成美式发音；
+            连接授权服务后，也可按词汇包预下载在线自然语音。
           </p>
           <div class="pack-manager">
             {vocabularyCatalog?.packs.map((pack) => {
