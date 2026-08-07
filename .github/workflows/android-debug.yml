@@ -30,8 +30,25 @@ jobs:
       - run: npm run prepare:offline-neural-tts
       - run: npx cap sync android
       - run: cd android && ./gradlew assembleDebug
+      - name: Verify APK metadata and offline neural payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk='android/app/build/outputs/apk/debug/app-debug.apk'
+          aapt_bin="$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -1)"
+          unzip -tq "$apk"
+          "$aapt_bin" dump badging "$apk" | grep -F "versionCode='9' versionName='1.4.0'"
+          "$aapt_bin" dump xmltree "$apk" AndroidManifest.xml | grep -F ':offline_speech'
+          unzip -l "$apk" | grep -F 'lib/arm64-v8a/libsherpa-onnx-jni.so'
+          unzip -l "$apk" | grep -F 'lib/armeabi-v7a/libsherpa-onnx-jni.so'
+          model_bytes="$(unzip -l "$apk" | awk '/assets\/kokoro-int8-en-v0_19\/model.int8.onnx/ {print $1}')"
+          test "${model_bytes:-0}" -gt 83886080
+          unzip -l "$apk" | grep -F 'assets/kokoro-int8-en-v0_19/espeak-ng-data/en_dict'
+          sha256sum "$apk" > android/app/build/outputs/apk/debug/app-debug.apk.sha256
       - uses: actions/upload-artifact@v4
         with:
-          name: opslingo-lite-debug-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: opslingo-lite-1.4.0-stable-neural-debug
+          path: |
+            android/app/build/outputs/apk/debug/app-debug.apk
+            android/app/build/outputs/apk/debug/app-debug.apk.sha256
           if-no-files-found: error
