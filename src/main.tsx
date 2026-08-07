@@ -1224,7 +1224,9 @@ function SpeakButton({
     let objectUrl: string | null = null;
     try {
       const mode = speechPlaybackMode();
-      if (naturalSpeechConfigured && mode !== 'offline-neural') {
+      const wantsOnline = mode === 'auto' || mode === 'online';
+      const wantsNeural = mode === 'auto' || mode === 'offline-neural';
+      if (naturalSpeechConfigured && wantsOnline) {
         const naturalAudio = await synthesizeNaturalEnglish(text);
         if (requestId !== playRequest.current) return;
         objectUrl = URL.createObjectURL(naturalAudio);
@@ -1236,7 +1238,7 @@ function SpeakButton({
           nextPlayer.onpause = () => resolve();
           nextPlayer.onerror = () => reject(new Error('自然美式语音未能播放。'));
         });
-      } else if (await offlineNeuralSpeechAvailable()) {
+      } else if (wantsNeural && (await offlineNeuralSpeechAvailable())) {
         if (requestId !== playRequest.current) return;
         await speakOfflineNeuralEnglish(text, rate);
       } else if (audio) {
@@ -1257,9 +1259,9 @@ function SpeakButton({
       if (audio) {
         try {
           await speakEnglish(text, rate);
-          if (naturalSpeechConfigured && mode !== 'offline-neural') {
+          if (naturalSpeechConfigured && mode !== 'offline-neural' && mode !== 'system') {
             notify('在线语音暂时不可用，已切换为离线参考朗读。');
-          } else if (mode === 'offline-neural') {
+          } else if (mode === 'offline-neural' || mode === 'auto') {
             notify('离线神经语音暂时不可用，已切换为离线参考朗读。');
           }
         } catch {
@@ -1268,9 +1270,9 @@ function SpeakButton({
       } else {
         try {
           await speakEnglish(text, rate);
-          if (naturalSpeechConfigured && mode !== 'offline-neural') {
+          if (naturalSpeechConfigured && mode !== 'offline-neural' && mode !== 'system') {
             notify('在线语音暂时不可用，已切换为系统朗读。');
-          } else if (mode === 'offline-neural') {
+          } else if (mode === 'offline-neural' || mode === 'auto') {
             notify('离线神经语音暂时不可用，已切换为系统朗读。');
           }
         } catch {
@@ -2191,7 +2193,7 @@ function Settings({
       <div class="cards">
         <article class="card">
           <h2>应用与内容</h2>
-          <p>应用版本 1.2.4 · 内容目录版本 1</p>
+          <p>应用版本 1.4.0 · 内容目录版本 1</p>
           <button onClick={update} disabled={busy}>
             {busy ? '检查中…' : '检查场景更新'}
           </button>
@@ -2249,13 +2251,16 @@ function Settings({
                   ? '已切换到离线神经美式语音。'
                   : next === 'online'
                     ? '已切换到在线高质量语音优先。'
-                    : '已切换到自动保障模式。'
+                    : next === 'system'
+                      ? '已切换到系统兼容朗读。'
+                      : '已切换到自动保障模式。'
               );
             }}
           >
             <option value="auto">自动保障（在线优先，离线神经兜底）</option>
             <option value="online">在线高质量（授权服务）</option>
             <option value="offline-neural">离线神经美式（APK 内置）</option>
+            <option value="system">系统兼容朗读（最稳妥）</option>
           </select>
           <small>
             {offlineNeuralReady
@@ -2267,7 +2272,7 @@ function Settings({
           <h2>离线词汇与发音包</h2>
           <p>
             APK 已包含全部 20000 词与 3000
-            个离线参考音。离线神经模型会为所有英文词汇和句子即时生成美式发音；
+            个离线参考音。量化离线神经模型在独立语音进程中为所有英文词汇和句子生成美式发音；
             连接授权服务后，也可按词汇包预下载在线自然语音。
           </p>
           <div class="pack-manager">

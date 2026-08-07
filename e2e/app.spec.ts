@@ -71,6 +71,17 @@ test('has no horizontal overflow on mobile', async ({ page }) => {
     true
   );
 });
+test('offers persistent fail-safe speech playback modes', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: '设置' }).click();
+  const mode = page.getByLabel('播放优先级');
+  await expect(mode).toHaveValue('auto');
+  await expect(mode.locator('option')).toHaveCount(4);
+  await mode.selectOption('system');
+  await expect(page.getByText('已切换到系统兼容朗读。')).toBeVisible();
+  await page.reload();
+  await expect(page.getByLabel('播放优先级')).toHaveValue('system');
+});
 test('keeps the header fixed and shows communication tips', async ({ page }) => {
   await page.goto('/');
   const homeHeader = page.locator('section > header');

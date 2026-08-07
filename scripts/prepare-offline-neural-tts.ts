@@ -6,10 +6,10 @@
  * source control so a transient raw-GitHub failure cannot break release builds.
  *
  * Runtime: Apache-2.0 (sherpa-onnx v1.13.4)
- * Model package: see the bundled LICENSE after extraction.  Keep its notices in
- * the in-app third-party notice before publishing a production store build.
+ * Model: official kokoro-int8-en-v0_19 release. The quantized model keeps the
+ * same 11 US/UK voices while avoiding the full model's mobile memory spike.
  */
-import { existsSync, mkdirSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, renameSync, rmSync, statSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -20,16 +20,12 @@ const cacheRoot = join(androidRoot, '.offline-tts-cache');
 const appRoot = join(androidRoot, 'app', 'src', 'main');
 const assetsRoot = join(appRoot, 'assets');
 const jniRoot = join(appRoot, 'jniLibs');
-const modelRoot = join(assetsRoot, 'kokoro-en-v0_19');
+const modelRoot = join(assetsRoot, 'kokoro-int8-en-v0_19');
 
 const runtimeUrl =
   'https://github.com/k2-fsa/sherpa-onnx/releases/download/v1.13.4/sherpa-onnx-v1.13.4-android.tar.bz2';
-const modelRepo = 'https://huggingface.co/csukuangfj/kokoro-en-v0_19';
-const huggingFaceApi = 'https://huggingface.co/api/models/csukuangfj/kokoro-en-v0_19';
-const modelRevision = '92805c4';
-const modelFileUrl = `${modelRepo}/resolve/${modelRevision}/model.onnx?download=true`;
-const voicesFileUrl = `${modelRepo}/resolve/${modelRevision}/voices.bin?download=true`;
-const tokensFileUrl = `${modelRepo}/resolve/${modelRevision}/tokens.txt?download=true`;
+const modelUrl =
+  'https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/kokoro-int8-en-v0_19.tar.bz2';
 
 function log(message: string) {
   process.stdout.write(`[offline-neural-tts] ${message}\n`);
@@ -71,15 +67,6 @@ function extract(archive: string, destination: string) {
   renameSync(staging, destination);
 }
 
-function fetchJson<T>(url: string): T {
-  const output = execFileSync(
-    'curl',
-    ['--fail', '--location', '--http1.1', '--retry', '3', '--retry-all-errors', url],
-    { cwd: projectRoot, env: process.env }
-  );
-  return JSON.parse(output.toString()) as T;
-}
-
 function main() {
   mkdirSync(cacheRoot, { recursive: true });
   const runtimeArchive = join(cacheRoot, 'sherpa-onnx-v1.13.4-android.tar.bz2');
@@ -91,45 +78,22 @@ function main() {
     log('Skipping model payload only for local native compilation verification.');
     return;
   }
-  mkdirSync(modelRoot, { recursive: true });
-  download(modelFileUrl, join(modelRoot, 'model.onnx'));
-  download(voicesFileUrl, join(modelRoot, 'voices.bin'));
-  download(tokensFileUrl, join(modelRoot, 'tokens.txt'));
-  const dataRoot = join(modelRoot, 'espeak-ng-data');
-  if (!existsSync(join(dataRoot, '.opslite-complete'))) {
-    log('Fetching the bundled offline English pronunciation data.');
-    const requiredDataFiles = new Set([
-      'espeak-ng-data/en_dict',
-      'espeak-ng-data/intonations',
-      'espeak-ng-data/phondata',
-      'espeak-ng-data/phondata-manifest',
-      'espeak-ng-data/phonindex',
-      'espeak-ng-data/phontab'
-    ]);
-    const dataFiles = fetchJson<Array<{ type: string; path: string }>>(
-      `${huggingFaceApi}/tree/${modelRevision}/espeak-ng-data?recursive=true&expand=false&limit=1000`
-    ).filter(
-      (entry) =>
-        entry.type === 'file' &&
-        (requiredDataFiles.has(entry.path) || entry.path.startsWith('espeak-ng-data/lang/gmw/'))
-    );
-    for (const entry of dataFiles) {
-      download(
-        `${modelRepo}/resolve/${modelRevision}/${entry.path.split('/').map(encodeURIComponent).join('/')}`,
-        join(modelRoot, entry.path)
-      );
-    }
-    writeFileSync(join(dataRoot, '.opslite-complete'), `${modelRevision}\n`);
+  const modelArchive = join(cacheRoot, 'kokoro-int8-en-v0_19.tar.bz2');
+  const modelFile = join(modelRoot, 'model.int8.onnx');
+  if (!existsSync(modelFile) || statSync(modelFile).size < 80 * 1024 * 1024) {
+    download(modelUrl, modelArchive);
+    extract(modelArchive, modelRoot);
   }
-  writeFileSync(
-    join(modelRoot, 'OPSLINGO_NOTICE.txt'),
-    'Bundled for offline neural speech. See the upstream repository and its license notices.\n'
-  );
-  const minimumModelBytes = 250 * 1024 * 1024;
-  if (statSync(join(modelRoot, 'model.onnx')).size < minimumModelBytes) {
+  const modelBytes = statSync(modelFile).size;
+  if (modelBytes < 80 * 1024 * 1024 || modelBytes > 180 * 1024 * 1024) {
     throw new Error(
-      'The offline neural model is unexpectedly small; refusing to build an incomplete APK.'
+      'The INT8 neural model has an unexpected size; refusing to build an incomplete APK.'
     );
+  }
+  for (const required of ['voices.bin', 'tokens.txt', 'espeak-ng-data/en_dict', 'LICENSE']) {
+    if (!existsSync(join(modelRoot, required))) {
+      throw new Error(`The offline neural voice package is missing ${required}.`);
+    }
   }
   log('Offline neural American-English voice is ready for APK packaging.');
 }

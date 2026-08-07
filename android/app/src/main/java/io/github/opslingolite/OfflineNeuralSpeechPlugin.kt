@@ -1,86 +1,45 @@
 package io.github.opslingolite
 
 import android.content.Context
-import android.media.AudioAttributes
-import android.media.AudioFormat
-import android.media.AudioManager
-import android.media.AudioTrack
+import android.content.Intent
+import android.os.Build
+import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.os.ResultReceiver
 import com.getcapacitor.JSObject
 import com.getcapacitor.Plugin
 import com.getcapacitor.PluginCall
 import com.getcapacitor.PluginMethod
 import com.getcapacitor.annotation.CapacitorPlugin
-import com.k2fsa.sherpa.onnx.OfflineTts
-import com.k2fsa.sherpa.onnx.getOfflineTtsConfig
-import java.util.concurrent.Executors
 
 /**
- * On-device US-English neural speech. The native runtime reads the model from
- * APK assets and streams PCM directly to the media channel. No text or audio
- * leaves the device in this path.
+ * Capacitor bridge for the offline voice service.
+ *
+ * Neural inference runs in a secondary Android process. If a device cannot load
+ * the native runtime or runs out of memory, Android may stop that process, but
+ * the learning app remains alive and the web layer can fall back to system TTS.
  */
 @CapacitorPlugin(name = "OfflineNeuralSpeech")
 class OfflineNeuralSpeechPlugin : Plugin() {
-    private val executor = Executors.newSingleThreadExecutor()
-    @Volatile private var stopped = false
-    @Volatile private var track: AudioTrack? = null
-    private var tts: OfflineTts? = null
-
     private fun hasModel(context: Context): Boolean = try {
-        context.assets.open("kokoro-en-v0_19/model.onnx").close()
-        context.assets.open("kokoro-en-v0_19/voices.bin").close()
-        context.assets.open("kokoro-en-v0_19/tokens.txt").close()
+        context.assets.open("$MODEL_ASSET_DIR/$MODEL_FILE").close()
+        context.assets.open("$MODEL_ASSET_DIR/voices.bin").close()
+        context.assets.open("$MODEL_ASSET_DIR/tokens.txt").close()
         true
-    } catch (_: Exception) {
+    } catch (_: Throwable) {
         false
     }
 
-    private fun getTts(): OfflineTts {
-        tts?.let { return it }
-        if (!hasModel(context)) throw IllegalStateException("离线神经语音包尚未包含在此 APK 中。")
-        val config = getOfflineTtsConfig(
-            modelDir = "kokoro-en-v0_19",
-            modelName = "model.onnx",
-            acousticModelName = "",
-            vocoder = "",
-            voices = "voices.bin",
-            lexicon = "",
-            dataDir = "kokoro-en-v0_19/espeak-ng-data",
-            dictDir = "",
-            ruleFsts = "",
-            ruleFars = "",
-            numThreads = 4
-        )
-        return OfflineTts(context.assets, config).also { tts = it }
-    }
-
-    private fun createTrack(sampleRate: Int): AudioTrack {
-        val minBuffer = AudioTrack.getMinBufferSize(
-            sampleRate,
-            AudioFormat.CHANNEL_OUT_MONO,
-            AudioFormat.ENCODING_PCM_FLOAT
-        ).coerceAtLeast(sampleRate / 5)
-        return AudioTrack(
-            AudioAttributes.Builder()
-                .setUsage(AudioAttributes.USAGE_MEDIA)
-                .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-                .build(),
-            AudioFormat.Builder()
-                .setEncoding(AudioFormat.ENCODING_PCM_FLOAT)
-                .setSampleRate(sampleRate)
-                .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
-                .build(),
-            minBuffer,
-            AudioTrack.MODE_STREAM,
-            AudioManager.AUDIO_SESSION_ID_GENERATE
-        )
+    private fun supportsDeviceAbi(): Boolean = Build.SUPPORTED_ABIS.any {
+        it == "arm64-v8a" || it == "armeabi-v7a"
     }
 
     @PluginMethod
     fun getStatus(call: PluginCall) {
         val output = JSObject()
-        output.put("available", hasModel(context))
-        output.put("engine", "Kokoro neural US English")
+        output.put("available", hasModel(context) && supportsDeviceAbi())
+        output.put("engine", "Kokoro INT8 neural US English")
         call.resolve(output)
     }
 
@@ -91,53 +50,62 @@ class OfflineNeuralSpeechPlugin : Plugin() {
             call.reject("朗读内容不能为空。")
             return
         }
-        val requestedSpeed = (call.getDouble("speed", 1.0) ?: 1.0).toFloat().coerceIn(0.7f, 1.3f)
-        executor.execute {
-            try {
-                stopPlayback()
-                val engine = getTts()
-                val audioTrack = createTrack(engine.sampleRate())
-                track = audioTrack
-                stopped = false
-                audioTrack.play()
-                engine.generateWithCallback(text, sid = 2, speed = requestedSpeed) { samples ->
-                    if (stopped) 0
-                    else {
-                        audioTrack.write(samples, 0, samples.size, AudioTrack.WRITE_BLOCKING)
-                        1
-                    }
+        if (!hasModel(context) || !supportsDeviceAbi()) {
+            call.reject("此设备不支持 APK 内置神经语音，已准备切换为系统朗读。")
+            return
+        }
+        val speed = (call.getDouble("speed", 1.0) ?: 1.0).toFloat().coerceIn(0.7f, 1.3f)
+        val receiver = object : ResultReceiver(Handler(Looper.getMainLooper())) {
+            override fun onReceiveResult(resultCode: Int, resultData: Bundle?) {
+                when (resultCode) {
+                    SPEECH_RESULT_OK, SPEECH_RESULT_CANCELLED -> call.resolve()
+                    else -> call.reject(
+                        resultData?.getString(SPEECH_RESULT_MESSAGE)
+                            ?: "离线神经语音未能播放，已准备切换为系统朗读。"
+                    )
                 }
-                audioTrack.stop()
-                audioTrack.release()
-                if (track === audioTrack) track = null
-                call.resolve()
-            } catch (error: Exception) {
-                stopPlayback()
-                call.reject(error.message ?: "离线神经语音未能播放。", error)
             }
+        }
+        try {
+            context.startService(
+                Intent(context, OfflineNeuralSpeechService::class.java).apply {
+                    action = SPEECH_ACTION_SPEAK
+                    putExtra(SPEECH_EXTRA_TEXT, text)
+                    putExtra(SPEECH_EXTRA_SPEED, speed)
+                    putExtra(SPEECH_EXTRA_RECEIVER, receiver)
+                }
+            )
+        } catch (error: Throwable) {
+            call.reject(error.message ?: "无法启动离线神经语音。")
         }
     }
 
     @PluginMethod
     fun stop(call: PluginCall) {
-        stopPlayback()
+        try {
+            context.stopService(Intent(context, OfflineNeuralSpeechService::class.java))
+        } catch (_: Throwable) {
+            // A stopped or unavailable secondary process is already the desired state.
+        }
         call.resolve()
     }
 
-    private fun stopPlayback() {
-        stopped = true
-        track?.let {
-            try { it.pause() } catch (_: Exception) { }
-            try { it.flush() } catch (_: Exception) { }
-            try { it.release() } catch (_: Exception) { }
-        }
-        track = null
-    }
-
     override fun handleOnDestroy() {
-        stopPlayback()
-        tts?.release()
-        executor.shutdownNow()
+        try {
+            context.stopService(Intent(context, OfflineNeuralSpeechService::class.java))
+        } catch (_: Throwable) {
+        }
         super.handleOnDestroy()
     }
 }
+
+internal const val MODEL_ASSET_DIR = "kokoro-int8-en-v0_19"
+internal const val MODEL_FILE = "model.int8.onnx"
+internal const val SPEECH_ACTION_SPEAK = "io.github.opslingolite.SPEAK"
+internal const val SPEECH_EXTRA_TEXT = "text"
+internal const val SPEECH_EXTRA_SPEED = "speed"
+internal const val SPEECH_EXTRA_RECEIVER = "receiver"
+internal const val SPEECH_RESULT_MESSAGE = "message"
+internal const val SPEECH_RESULT_OK = 1
+internal const val SPEECH_RESULT_ERROR = 2
+internal const val SPEECH_RESULT_CANCELLED = 3

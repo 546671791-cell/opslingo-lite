@@ -24,6 +24,12 @@
 
         </activity>
 
+        <service
+            android:name=".OfflineNeuralSpeechService"
+            android:exported="false"
+            android:process=":offline_speech"
+            android:stopWithTask="true" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

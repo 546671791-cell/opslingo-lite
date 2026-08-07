@@ -9,3 +9,4 @@ azure-function/local.settings.json
 android/.offline-tts-cache/
 android/app/src/main/jniLibs/
 android/app/src/main/assets/kokoro-en-v0_19/
+android/app/src/main/assets/kokoro-int8-en-v0_19/
