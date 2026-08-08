@@ -2,10 +2,11 @@ import { defineConfig } from 'vite';
 import preact from '@preact/preset-vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
-const repoBase = process.env.GITHUB_ACTIONS ? '/opslingo-lite/' : '/';
+const deployTarget = process.env.VITE_DEPLOY_TARGET;
+const appBase = deployTarget === 'pages' ? '/opslingo-lite/' : './';
 
 export default defineConfig({
-  base: repoBase,
+  base: appBase,
   plugins: [
     preact(),
     VitePWA({

@@ -8,8 +8,10 @@ on:
       - 'public/**'
       - 'android/**'
       - 'capacitor.config.ts'
+      - 'index.html'
       - 'package.json'
       - 'package-lock.json'
+      - 'vite.config.ts'
       - '.github/workflows/android-debug.yml'
 permissions: { contents: write }
 jobs:
@@ -24,11 +26,22 @@ jobs:
         with: { distribution: temurin, java-version: '21' }
       - uses: android-actions/setup-android@v3
       - run: npm ci
-      - run: npm run build
+      - run: npm run build:android
         env:
           VITE_SPEECH_API_URL: ${{ vars.VITE_SPEECH_API_URL }}
       - run: npm run prepare:offline-neural-tts
       - run: npx cap sync android
+      - name: Verify Android web entry uses local asset paths
+        shell: bash
+        run: |
+          set -euo pipefail
+          index='android/app/src/main/assets/public/index.html'
+          grep -F 'src="./assets/' "$index"
+          grep -F 'href="./assets/' "$index"
+          if grep -Fq '/opslingo-lite/' "$index"; then
+            echo 'GitHub Pages base path must never be packaged into Android.' >&2
+            exit 1
+          fi
       - run: cd android && ./gradlew assembleDebug
       - name: Verify APK metadata and offline neural payload
         shell: bash
@@ -37,22 +50,27 @@ jobs:
           apk='android/app/build/outputs/apk/debug/app-debug.apk'
           aapt_bin="$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -1)"
           unzip -tq "$apk"
-          "$aapt_bin" dump badging "$apk" | grep -F "versionCode='9' versionName='1.4.0'"
+          "$aapt_bin" dump badging "$apk" | grep -F "versionCode='10' versionName='1.4.1'"
           "$aapt_bin" dump xmltree "$apk" AndroidManifest.xml | grep -F ':offline_speech'
+          unzip -p "$apk" assets/public/index.html | grep -F 'src="./assets/'
+          if unzip -p "$apk" assets/public/index.html | grep -Fq '/opslingo-lite/'; then
+            echo 'Broken Pages base path found inside APK.' >&2
+            exit 1
+          fi
           unzip -l "$apk" | grep -F 'lib/arm64-v8a/libsherpa-onnx-jni.so'
           unzip -l "$apk" | grep -F 'lib/armeabi-v7a/libsherpa-onnx-jni.so'
           model_bytes="$(unzip -l "$apk" | awk '/assets\/kokoro-int8-en-v0_19\/model.int8.onnx/ {print $1}')"
           test "${model_bytes:-0}" -gt 83886080
           unzip -l "$apk" | grep -F 'assets/kokoro-int8-en-v0_19/espeak-ng-data/en_dict'
           mkdir -p release-output
-          cp "$apk" release-output/OpsLingo-Lite-1.4.0-android-debug.apk
-          sha256sum release-output/OpsLingo-Lite-1.4.0-android-debug.apk > release-output/OpsLingo-Lite-1.4.0-android-debug.apk.sha256
+          cp "$apk" release-output/OpsLingo-Lite-1.4.1-android-debug.apk
+          sha256sum release-output/OpsLingo-Lite-1.4.1-android-debug.apk > release-output/OpsLingo-Lite-1.4.1-android-debug.apk.sha256
       - uses: actions/upload-artifact@v4
         with:
-          name: opslingo-lite-1.4.0-stable-neural-debug
+          name: opslingo-lite-1.4.1-android-white-screen-fix
           path: |
-            release-output/OpsLingo-Lite-1.4.0-android-debug.apk
-            release-output/OpsLingo-Lite-1.4.0-android-debug.apk.sha256
+            release-output/OpsLingo-Lite-1.4.1-android-debug.apk
+            release-output/OpsLingo-Lite-1.4.1-android-debug.apk.sha256
           if-no-files-found: error
       - name: Publish permanent GitHub Release download
         if: github.ref == 'refs/heads/main'
@@ -61,15 +79,15 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if ! gh release view v1.4.0 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release create v1.4.0 \
+          if ! gh release view v1.4.1 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create v1.4.1 \
               --repo "$GITHUB_REPOSITORY" \
               --target "$GITHUB_SHA" \
-              --title 'OpsLingo Lite v1.4.0' \
-              --notes '稳定语音版：Kokoro INT8 离线美式语音、独立语音进程、系统朗读兜底。'
+              --title 'OpsLingo Lite v1.4.1' \
+              --notes '修复 Android 安装后白屏：APK 改用本地相对资源路径，并在发布前验证入口文件；保留 Kokoro INT8 离线美式语音、独立语音进程和系统朗读兜底。'
           fi
-          gh release upload v1.4.0 \
-            release-output/OpsLingo-Lite-1.4.0-android-debug.apk \
-            release-output/OpsLingo-Lite-1.4.0-android-debug.apk.sha256 \
+          gh release upload v1.4.1 \
+            release-output/OpsLingo-Lite-1.4.1-android-debug.apk \
+            release-output/OpsLingo-Lite-1.4.1-android-debug.apk.sha256 \
             --repo "$GITHUB_REPOSITORY" \
             --clobber

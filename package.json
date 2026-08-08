@@ -1,6 +1,6 @@
 {
   "name": "opslite-pwa",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -11,6 +11,8 @@
     "build:catalog": "tsx scripts/build-content-catalog.ts",
     "build:vocabulary": "tsx scripts/build-us-life-vocabulary.ts",
     "build": "npm run validate:content && npm run validate:vocabulary && npm run validate:offline-library && tsc -b && vite build",
+    "build:android": "VITE_DEPLOY_TARGET=android npm run build",
+    "build:pages": "VITE_DEPLOY_TARGET=pages npm run build",
     "preview": "vite preview",
     "lint": "eslint . --max-warnings=0",
     "format": "prettier --write .",
@@ -20,7 +22,7 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "prepare:offline-neural-tts": "tsx scripts/prepare-offline-neural-tts.ts",
-    "android:sync": "npm run build && npm run prepare:offline-neural-tts && npx cap sync android",
+    "android:sync": "npm run build:android && npm run prepare:offline-neural-tts && npx cap sync android",
     "android:debug": "npm run android:sync && cd android && ./gradlew assembleDebug",
     "quality": "npm run format:check && npm run lint && npm run typecheck && npm run test:coverage && npm run build && npm run test:e2e"
   },

@@ -8,8 +8,8 @@ android {
         applicationId "io.github.opslingolite"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 9
-        versionName "1.4.0"
+        versionCode 10
+        versionName "1.4.1"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         // Phone-only package: ARM64 and 32-bit ARM devices. Excluding desktop
         // emulator ABIs keeps the bundled neural voice below the 500 MB target.
