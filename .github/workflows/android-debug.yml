@@ -11,7 +11,7 @@ on:
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/android-debug.yml'
-permissions: { contents: read }
+permissions: { contents: write }
 jobs:
   build-debug-apk:
     runs-on: ubuntu-latest
@@ -44,11 +44,32 @@ jobs:
           model_bytes="$(unzip -l "$apk" | awk '/assets\/kokoro-int8-en-v0_19\/model.int8.onnx/ {print $1}')"
           test "${model_bytes:-0}" -gt 83886080
           unzip -l "$apk" | grep -F 'assets/kokoro-int8-en-v0_19/espeak-ng-data/en_dict'
-          sha256sum "$apk" > android/app/build/outputs/apk/debug/app-debug.apk.sha256
+          mkdir -p release-output
+          cp "$apk" release-output/OpsLingo-Lite-1.4.0-android-debug.apk
+          sha256sum release-output/OpsLingo-Lite-1.4.0-android-debug.apk > release-output/OpsLingo-Lite-1.4.0-android-debug.apk.sha256
       - uses: actions/upload-artifact@v4
         with:
           name: opslingo-lite-1.4.0-stable-neural-debug
           path: |
-            android/app/build/outputs/apk/debug/app-debug.apk
-            android/app/build/outputs/apk/debug/app-debug.apk.sha256
+            release-output/OpsLingo-Lite-1.4.0-android-debug.apk
+            release-output/OpsLingo-Lite-1.4.0-android-debug.apk.sha256
           if-no-files-found: error
+      - name: Publish permanent GitHub Release download
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! gh release view v1.4.0 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create v1.4.0 \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "$GITHUB_SHA" \
+              --title 'OpsLingo Lite v1.4.0' \
+              --notes '稳定语音版：Kokoro INT8 离线美式语音、独立语音进程、系统朗读兜底。'
+          fi
+          gh release upload v1.4.0 \
+            release-output/OpsLingo-Lite-1.4.0-android-debug.apk \
+            release-output/OpsLingo-Lite-1.4.0-android-debug.apk.sha256 \
+            --repo "$GITHUB_REPOSITORY" \
+            --clobber
